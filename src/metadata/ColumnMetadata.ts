@@ -7,7 +7,6 @@ import {ColumnMetadataArgs} from "../metadata-args/ColumnMetadataArgs";
 import {Connection} from "../connection/Connection";
 import {OrmUtils} from "../util/OrmUtils";
 import {ValueTransformer} from "../decorator/options/ValueTransformer";
-import {MongoDriver} from "../driver/mongodb/MongoDriver";
 import {PromiseUtils} from "../util/PromiseUtils";
 import {FindOperator} from "../find-options/FindOperator";
 import {ApplyValueTransformers} from "../util/ApplyValueTransformers";
@@ -714,8 +713,6 @@ export class ColumnMetadata {
 
     protected buildDatabaseName(connection: Connection): string {
         let propertyNames = this.embeddedMetadata ? this.embeddedMetadata.parentPrefixes : [];
-        if (connection.driver instanceof MongoDriver) // we don't need to include embedded name for the mongodb column names
-            propertyNames = [];
         return connection.namingStrategy.columnName(this.propertyName, this.givenDatabaseName, propertyNames);
     }
 

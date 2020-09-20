@@ -168,18 +168,6 @@ export class ConnectionOptionsReader {
                 });
                 Object.assign(connectionOptions, { migrations: migrations });
             }
-
-            // make database path file in sqlite relative to package.json
-            if (options.type === "sqlite" || options.type === "better-sqlite3") {
-                if (typeof options.database === "string" &&
-                    options.database.substr(0, 1) !== "/" &&  // unix absolute
-                    options.database.substr(1, 2) !== ":\\" && // windows absolute
-                    options.database !== ":memory:") {
-                    Object.assign(options, {
-                        database: this.baseDirectory + "/" + options.database
-                    });
-                }
-            }
         });
 
         return connectionOptions;

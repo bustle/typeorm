@@ -1,24 +1,18 @@
-import {CockroachDriver} from "../driver/cockroachdb/CockroachDriver";
 import {QueryBuilder} from "./QueryBuilder";
 import {ObjectLiteral} from "../common/ObjectLiteral";
 import {EntityTarget} from "../common/EntityTarget";
 import {Connection} from "../connection/Connection";
 import {QueryRunner} from "../query-runner/QueryRunner";
-import {SqlServerDriver} from "../driver/sqlserver/SqlServerDriver";
 import {PostgresDriver} from "../driver/postgres/PostgresDriver";
 import {WhereExpression} from "./WhereExpression";
 import {Brackets} from "./Brackets";
 import {UpdateResult} from "./result/UpdateResult";
 import {ReturningStatementNotSupportedError} from "../error/ReturningStatementNotSupportedError";
 import {ReturningResultsEntityUpdator} from "./ReturningResultsEntityUpdator";
-import {SqljsDriver} from "../driver/sqljs/SqljsDriver";
-import {MysqlDriver} from "../driver/mysql/MysqlDriver";
 import {BroadcasterResult} from "../subscriber/BroadcasterResult";
-import {AbstractSqliteDriver} from "../driver/sqlite-abstract/AbstractSqliteDriver";
 import {OrderByCondition} from "../find-options/OrderByCondition";
 import {LimitOnUpdateNotSupportedError} from "../error/LimitOnUpdateNotSupportedError";
 import {MissingDeleteDateColumnError} from "../error/MissingDeleteDateColumnError";
-import {OracleDriver} from "../driver/oracle/OracleDriver";
 import {UpdateValuesMissingError} from "../error/UpdateValuesMissingError";
 import {EntitySchema} from "../entity-schema/EntitySchema";
 
@@ -127,9 +121,6 @@ export class SoftDeleteQueryBuilder<Entity> extends QueryBuilder<Entity> impleme
         } finally {
             if (queryRunner !== this.queryRunner) { // means we created our own query runner
                 await queryRunner.release();
-            }
-            if (this.connection.driver instanceof SqljsDriver && !queryRunner.isTransactionActive) {
-                await this.connection.driver.autoSave();
             }
         }
     }
@@ -375,7 +366,6 @@ export class SoftDeleteQueryBuilder<Entity> extends QueryBuilder<Entity> impleme
 
         // prepare columns and values to be updated
         const updateColumnAndValues: string[] = [];
-        const newParameters: ObjectLiteral = {};
 
         switch (this.expressionMap.queryType) {
             case "soft-delete":
@@ -396,24 +386,13 @@ export class SoftDeleteQueryBuilder<Entity> extends QueryBuilder<Entity> impleme
             throw new UpdateValuesMissingError();
         }
 
-        // we re-write parameters this way because we want our "UPDATE ... SET" parameters to be first in the list of "nativeParameters"
-        // because some drivers like mysql depend on order of parameters
-        if (this.connection.driver instanceof MysqlDriver ||
-            this.connection.driver instanceof OracleDriver ||
-            this.connection.driver instanceof AbstractSqliteDriver) {
-            this.expressionMap.nativeParameters = Object.assign(newParameters, this.expressionMap.nativeParameters);
-        }
-
         // get a table name and all column database names
         const whereExpression = this.createWhereExpression();
         const returningExpression = this.createReturningExpression();
 
         // generate and return sql update query
-        if (returningExpression && (this.connection.driver instanceof PostgresDriver || this.connection.driver instanceof OracleDriver || this.connection.driver instanceof CockroachDriver)) {
+        if (returningExpression && (this.connection.driver instanceof PostgresDriver)) {
             return `UPDATE ${this.getTableName(this.getMainTableName())} SET ${updateColumnAndValues.join(", ")}${whereExpression} RETURNING ${returningExpression}`;
-
-        } else if (returningExpression && this.connection.driver instanceof SqlServerDriver) {
-            return `UPDATE ${this.getTableName(this.getMainTableName())} SET ${updateColumnAndValues.join(", ")} OUTPUT ${returningExpression}${whereExpression}`;
 
         } else {
             return `UPDATE ${this.getTableName(this.getMainTableName())} SET ${updateColumnAndValues.join(", ")}${whereExpression}`; // todo: how do we replace aliases in where to nothing?
@@ -446,11 +425,7 @@ export class SoftDeleteQueryBuilder<Entity> extends QueryBuilder<Entity> impleme
         let limit: number|undefined = this.expressionMap.limit;
 
         if (limit) {
-            if (this.connection.driver instanceof MysqlDriver) {
-                return " LIMIT " + limit;
-            } else {
-                throw new LimitOnUpdateNotSupportedError();
-            }
+            throw new LimitOnUpdateNotSupportedError();
         }
 
         return "";

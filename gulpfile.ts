@@ -203,7 +203,7 @@ export class Gulpfile {
     eslint() {
         return gulp.src(["./src/**/*.ts", "./test/**/*.ts", "./sample/**/*.ts"])
             .pipe(eslint())
-            .pipe(eslint.format('stylish'))
+            .pipe(eslint.format("stylish"))
             .pipe(eslint.failAfterError())
     }
 

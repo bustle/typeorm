@@ -9,7 +9,6 @@ import {DeepPartial} from "../common/DeepPartial";
 import {RemoveOptions} from "../repository/RemoveOptions";
 import {SaveOptions} from "../repository/SaveOptions";
 import {NoNeedToReleaseEntityManagerError} from "../error/NoNeedToReleaseEntityManagerError";
-import {MongoRepository} from "../repository/MongoRepository";
 import {TreeRepository} from "../repository/TreeRepository";
 import {Repository} from "../repository/Repository";
 import {FindOptionsUtils} from "../find-options/FindOptionsUtils";
@@ -21,18 +20,15 @@ import {AbstractRepository} from "../repository/AbstractRepository";
 import {CustomRepositoryCannotInheritRepositoryError} from "../error/CustomRepositoryCannotInheritRepositoryError";
 import {QueryRunner} from "../query-runner/QueryRunner";
 import {SelectQueryBuilder} from "../query-builder/SelectQueryBuilder";
-import {MongoDriver} from "../driver/mongodb/MongoDriver";
 import {RepositoryNotFoundError} from "../error/RepositoryNotFoundError";
 import {RepositoryNotTreeError} from "../error/RepositoryNotTreeError";
 import {RepositoryFactory} from "../repository/RepositoryFactory";
 import {TreeRepositoryNotSupportedError} from "../error/TreeRepositoryNotSupportedError";
 import {QueryDeepPartialEntity} from "../query-builder/QueryPartialEntity";
 import {EntityPersistExecutor} from "../persistence/EntityPersistExecutor";
-import {ObjectID} from "../driver/mongodb/typings";
 import {InsertResult} from "../query-builder/result/InsertResult";
 import {UpdateResult} from "../query-builder/result/UpdateResult";
 import {DeleteResult} from "../query-builder/result/DeleteResult";
-import {OracleDriver} from "../driver/oracle/OracleDriver";
 import {FindConditions} from "../find-options/FindConditions";
 import {IsolationLevel} from "../driver/types/IsolationLevel";
 import {ObjectUtils} from "../util/ObjectUtils";
@@ -116,9 +112,6 @@ export class EntityManager {
         if (!runInTransaction) {
             throw new Error(`Transaction method requires callback in second paramter if isolation level is supplied.`);
         }
-
-        if (this.connection.driver instanceof MongoDriver)
-            throw new Error(`Transactions aren't supported by MongoDB.`);
 
         if (this.queryRunner && this.queryRunner.isReleased)
             throw new QueryRunnerProviderAlreadyReleasedError();
@@ -457,11 +450,6 @@ export class EntityManager {
      * You can execute bulk inserts using this method.
      */
     async insert<Entity>(target: EntityTarget<Entity>, entity: QueryDeepPartialEntity<Entity>|(QueryDeepPartialEntity<Entity>[])): Promise<InsertResult> {
-        // TODO: Oracle does not support multiple values. Need to create another nice solution.
-        if (this.connection.driver instanceof OracleDriver && Array.isArray(entity)) {
-            const results = await Promise.all(entity.map(entity => this.insert(target, entity)));
-            return results.reduce((mergedResult, result) => Object.assign(mergedResult, result), {} as InsertResult);
-        }
         return this.createQueryBuilder()
             .insert()
             .into(target)
@@ -476,7 +464,7 @@ export class EntityManager {
      * Does not check if entity exist in the database.
      * Condition(s) cannot be empty.
      */
-    update<Entity>(target: EntityTarget<Entity>, criteria: string|string[]|number|number[]|Date|Date[]|ObjectID|ObjectID[]|any, partialEntity: QueryDeepPartialEntity<Entity>): Promise<UpdateResult> {
+    update<Entity>(target: EntityTarget<Entity>, criteria: string|string[]|number|number[]|Date|Date[]|any, partialEntity: QueryDeepPartialEntity<Entity>): Promise<UpdateResult> {
 
         // if user passed empty criteria or empty list of criterias, then throw an error
         if (criteria === undefined ||
@@ -514,7 +502,7 @@ export class EntityManager {
      * Does not check if entity exist in the database.
      * Condition(s) cannot be empty.
      */
-    delete<Entity>(targetOrEntity: EntityTarget<Entity>, criteria: string|string[]|number|number[]|Date|Date[]|ObjectID|ObjectID[]|any): Promise<DeleteResult> {
+    delete<Entity>(targetOrEntity: EntityTarget<Entity>, criteria: string|string[]|number|number[]|Date|Date[]|any): Promise<DeleteResult> {
 
         // if user passed empty criteria or empty list of criterias, then throw an error
         if (criteria === undefined ||
@@ -552,7 +540,7 @@ export class EntityManager {
      * Does not check if entity exist in the database.
      * Condition(s) cannot be empty.
      */
-    softDelete<Entity>(targetOrEntity: EntityTarget<Entity>, criteria: string|string[]|number|number[]|Date|Date[]|ObjectID|ObjectID[]|any): Promise<UpdateResult> {
+    softDelete<Entity>(targetOrEntity: EntityTarget<Entity>, criteria: string|string[]|number|number[]|Date|Date[]|any): Promise<UpdateResult> {
 
         // if user passed empty criteria or empty list of criterias, then throw an error
         if (criteria === undefined ||
@@ -590,7 +578,7 @@ export class EntityManager {
      * Does not check if entity exist in the database.
      * Condition(s) cannot be empty.
      */
-    restore<Entity>(targetOrEntity: EntityTarget<Entity>, criteria: string|string[]|number|number[]|Date|Date[]|ObjectID|ObjectID[]|any): Promise<UpdateResult> {
+    restore<Entity>(targetOrEntity: EntityTarget<Entity>, criteria: string|string[]|number|number[]|Date|Date[]|any): Promise<UpdateResult> {
 
         // if user passed empty criteria or empty list of criterias, then throw an error
         if (criteria === undefined ||
@@ -735,7 +723,7 @@ export class EntityManager {
     /**
      * Finds first entity that matches given find options.
      */
-    findOne<Entity>(entityClass: EntityTarget<Entity>, id?: string|number|Date|ObjectID, options?: FindOneOptions<Entity>): Promise<Entity|undefined>;
+    findOne<Entity>(entityClass: EntityTarget<Entity>, id?: string|number|Date, options?: FindOneOptions<Entity>): Promise<Entity|undefined>;
 
     /**
      * Finds first entity that matches given find options.
@@ -750,7 +738,7 @@ export class EntityManager {
     /**
      * Finds first entity that matches given conditions.
      */
-    async findOne<Entity>(entityClass: EntityTarget<Entity>, idOrOptionsOrConditions?: string|string[]|number|number[]|Date|Date[]|ObjectID|ObjectID[]|FindOneOptions<Entity>|FindConditions<Entity>, maybeOptions?: FindOneOptions<Entity>): Promise<Entity|undefined> {
+    async findOne<Entity>(entityClass: EntityTarget<Entity>, idOrOptionsOrConditions?: string|string[]|number|number[]|Date|Date[]|FindOneOptions<Entity>|FindConditions<Entity>, maybeOptions?: FindOneOptions<Entity>): Promise<Entity|undefined> {
 
         let findOptions: FindManyOptions<any>|FindOneOptions<any>|undefined = undefined;
         if (FindOptionsUtils.isFindOneOptions(idOrOptionsOrConditions)) {
@@ -800,7 +788,7 @@ export class EntityManager {
     /**
      * Finds first entity that matches given find options or rejects the returned promise on error.
      */
-    findOneOrFail<Entity>(entityClass: EntityTarget<Entity>, id?: string|number|Date|ObjectID, options?: FindOneOptions<Entity>): Promise<Entity>;
+    findOneOrFail<Entity>(entityClass: EntityTarget<Entity>, id?: string|number|Date, options?: FindOneOptions<Entity>): Promise<Entity>;
 
     /**
      * Finds first entity that matches given find options or rejects the returned promise on error.
@@ -815,7 +803,7 @@ export class EntityManager {
     /**
      * Finds first entity that matches given conditions or rejects the returned promise on error.
      */
-    async findOneOrFail<Entity>(entityClass: EntityTarget<Entity>, idOrOptionsOrConditions?: string|string[]|number|number[]|Date|Date[]|ObjectID|ObjectID[]|FindOneOptions<Entity>|FindConditions<Entity>, maybeOptions?: FindOneOptions<Entity>): Promise<Entity> {
+    async findOneOrFail<Entity>(entityClass: EntityTarget<Entity>, idOrOptionsOrConditions?: string|string[]|number|number[]|Date|Date[]|FindOneOptions<Entity>|FindConditions<Entity>, maybeOptions?: FindOneOptions<Entity>): Promise<Entity> {
         return this.findOne<Entity>(entityClass as any, idOrOptionsOrConditions as any, maybeOptions).then((value) => {
             if (value === undefined) {
                 return Promise.reject(new EntityNotFoundError(entityClass, idOrOptionsOrConditions));
@@ -948,13 +936,6 @@ export class EntityManager {
             throw new RepositoryNotTreeError(target);
 
         return repository;
-    }
-
-    /**
-     * Gets mongodb repository for the given entity class.
-     */
-    getMongoRepository<Entity>(target: EntityTarget<Entity>): MongoRepository<Entity> {
-        return this.connection.getMongoRepository<Entity>(target);
     }
 
     /**

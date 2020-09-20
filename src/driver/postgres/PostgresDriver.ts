@@ -19,8 +19,6 @@ import {PostgresConnectionCredentialsOptions} from "./PostgresConnectionCredenti
 import {EntityMetadata} from "../../metadata/EntityMetadata";
 import {OrmUtils} from "../../util/OrmUtils";
 import {ApplyValueTransformers} from "../../util/ApplyValueTransformers";
-import {AuroraDataApiPostgresConnectionOptions} from "../aurora-data-api-pg/AuroraDataApiPostgresConnectionOptions";
-import {AuroraDataApiPostgresQueryRunner} from "../aurora-data-api-pg/AuroraDataApiPostgresQueryRunner";
 
 /**
  * Organizes communication with PostgreSQL DBMS.
@@ -395,7 +393,7 @@ export class PostgresDriver implements Driver {
             return metadata.columns.filter(column => this.spatialTypes.indexOf(column.type) >= 0).length > 0;
         });
         const hasLtreeColumns = this.connection.entityMetadatas.some(metadata => {
-            return metadata.columns.filter(column => column.type === 'ltree').length > 0;
+            return metadata.columns.filter(column => column.type === "ltree").length > 0;
         });
         const hasExclusionConstraints = this.connection.entityMetadatas.some(metadata => {
             return metadata.exclusions.length > 0;
@@ -500,7 +498,7 @@ export class PostgresDriver implements Driver {
             return `(${value.join(",")})`;
 
         } else if (columnMetadata.type === "ltree") {
-            return value.split(".").filter(Boolean).join('.').replace(/[\s]+/g, "_");
+            return value.split(".").filter(Boolean).join(".").replace(/[\s]+/g, "_");
         } else if (
             (
                 columnMetadata.type === "enum"
@@ -1038,125 +1036,4 @@ export class PostgresDriver implements Driver {
         });
     }
 
-}
-
-abstract class PostgresWrapper extends PostgresDriver {
-    options: any;
-
-    abstract createQueryRunner(mode: "master"|"slave"): any;
-}
-
-export class AuroraDataApiPostgresDriver extends PostgresWrapper {
-
-    // -------------------------------------------------------------------------
-    // Public Properties
-    // -------------------------------------------------------------------------
-
-    /**
-     * Connection used by driver.
-     */
-    connection: Connection;
-
-    /**
-     * Aurora Data API underlying library.
-     */
-    DataApiDriver: any;
-
-    client: any;
-
-    // -------------------------------------------------------------------------
-    // Public Implemented Properties
-    // -------------------------------------------------------------------------
-
-    /**
-     * Connection options.
-     */
-    options: AuroraDataApiPostgresConnectionOptions;
-
-    /**
-     * Master database used to perform all write queries.
-     */
-    database?: string;
-
-    // -------------------------------------------------------------------------
-    // Constructor
-    // -------------------------------------------------------------------------
-
-    constructor(connection: Connection) {
-        super();
-        this.connection = connection;
-        this.options = connection.options as AuroraDataApiPostgresConnectionOptions;
-        this.isReplicated = false;
-
-        // load data-api package
-        this.loadDependencies();
-
-        this.client = new this.DataApiDriver(
-            this.options.region,
-            this.options.secretArn,
-            this.options.resourceArn,
-            this.options.database,
-            (query: string, parameters?: any[]) => this.connection.logger.logQuery(query, parameters),
-            this.options.serviceConfigOptions,
-            this.options.formatOptions,
-        );
-    }
-
-    // -------------------------------------------------------------------------
-    // Public Implemented Methods
-    // -------------------------------------------------------------------------
-
-    /**
-     * Performs connection to the database.
-     * Based on pooling options, it can either create connection immediately,
-     * either create a pool and create connection when needed.
-     */
-    async connect(): Promise<void> {
-    }
-
-    /**
-     * Closes connection with database.
-     */
-    async disconnect(): Promise<void> {
-    }
-
-    /**
-     * Creates a query runner used to execute database queries.
-     */
-    createQueryRunner(mode: "master"|"slave" = "master") {
-        return new AuroraDataApiPostgresQueryRunner(this, mode);
-    }
-
-    // -------------------------------------------------------------------------
-    // Protected Methods
-    // -------------------------------------------------------------------------
-
-    /**
-     * If driver dependency is not given explicitly, then try to load it via "require".
-     */
-    protected loadDependencies(): void {
-        const { pg } = PlatformTools.load("typeorm-aurora-data-api-driver");
-
-        this.DataApiDriver = pg;
-    }
-
-    /**
-     * Executes given query.
-     */
-    protected executeQuery(connection: any, query: string) {
-        return this.client.query(query);
-    }
-
-    /**
-     * Makes any action after connection (e.g. create extensions in Postgres driver).
-     */
-    async afterConnect(): Promise<void> {
-        const extensionsMetadata = await this.checkMetadataForExtensions();
-
-        if (extensionsMetadata.hasExtensions) {
-            await this.enableExtensions(extensionsMetadata, this.connection);
-        }
-
-        return Promise.resolve();
-    }
 }

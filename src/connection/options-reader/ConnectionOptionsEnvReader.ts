@@ -25,7 +25,6 @@ export class ConnectionOptionsEnvReader {
             username: PlatformTools.getEnvVariable("TYPEORM_USERNAME"),
             password: PlatformTools.getEnvVariable("TYPEORM_PASSWORD"),
             database: PlatformTools.getEnvVariable("TYPEORM_DATABASE"),
-            sid: PlatformTools.getEnvVariable("TYPEORM_SID"),
             schema: PlatformTools.getEnvVariable("TYPEORM_SCHEMA"),
             extra: PlatformTools.getEnvVariable("TYPEORM_DRIVER_EXTRA") ? JSON.parse(PlatformTools.getEnvVariable("TYPEORM_DRIVER_EXTRA")) : undefined,
             synchronize: OrmUtils.toBoolean(PlatformTools.getEnvVariable("TYPEORM_SYNCHRONIZE")),
@@ -39,7 +38,6 @@ export class ConnectionOptionsEnvReader {
             logger: PlatformTools.getEnvVariable("TYPEORM_LOGGER"),
             entityPrefix: PlatformTools.getEnvVariable("TYPEORM_ENTITY_PREFIX"),
             maxQueryExecutionTime: PlatformTools.getEnvVariable("TYPEORM_MAX_QUERY_EXECUTION_TIME"),
-            debug: PlatformTools.getEnvVariable("TYPEORM_DEBUG"),
             cli: {
                 entitiesDir: PlatformTools.getEnvVariable("TYPEORM_ENTITIES_DIR"),
                 migrationsDir: PlatformTools.getEnvVariable("TYPEORM_MIGRATIONS_DIR"),

@@ -1,7 +1,5 @@
-import {SapDriver} from "../driver/sap/SapDriver";
 import {RawSqlResultsToEntityTransformer} from "./transformer/RawSqlResultsToEntityTransformer";
 import {ObjectLiteral} from "../common/ObjectLiteral";
-import {SqlServerDriver} from "../driver/sqlserver/SqlServerDriver";
 import {PessimisticLockTransactionRequiredError} from "../error/PessimisticLockTransactionRequiredError";
 import {NoVersionOrUpdateDateColumnError} from "../error/NoVersionOrUpdateDateColumnError";
 import {OptimisticLockVersionMismatchError} from "../error/OptimisticLockVersionMismatchError";
@@ -16,9 +14,7 @@ import {RelationCountMetadataToAttributeTransformer} from "./relation-count/Rela
 import {QueryBuilder} from "./QueryBuilder";
 import {ReadStream} from "../platform/PlatformTools";
 import {LockNotSupportedOnGivenDriverError} from "../error/LockNotSupportedOnGivenDriverError";
-import {MysqlDriver} from "../driver/mysql/MysqlDriver";
 import {PostgresDriver} from "../driver/postgres/PostgresDriver";
-import {OracleDriver} from "../driver/oracle/OracleDriver";
 import {SelectQuery} from "./SelectQuery";
 import {EntityMetadata} from "../metadata/EntityMetadata";
 import {ColumnMetadata} from "../metadata/ColumnMetadata";
@@ -28,14 +24,11 @@ import {EntityTarget} from "../common/EntityTarget";
 import {QueryRunner} from "../query-runner/QueryRunner";
 import {WhereExpression} from "./WhereExpression";
 import {Brackets} from "./Brackets";
-import {AbstractSqliteDriver} from "../driver/sqlite-abstract/AbstractSqliteDriver";
 import {QueryResultCacheOptions} from "../cache/QueryResultCacheOptions";
-import {OffsetWithoutLimitNotSupportedError} from "../error/OffsetWithoutLimitNotSupportedError";
 import {BroadcasterResult} from "../subscriber/BroadcasterResult";
 import {SelectQueryBuilderOption} from "./SelectQueryBuilderOption";
 import {ObjectUtils} from "../util/ObjectUtils";
 import {DriverUtils} from "../driver/DriverUtils";
-import {AuroraDataApiDriver} from "../driver/aurora-data-api/AuroraDataApiDriver";
 
 /**
  * Allows to build complex sql queries in a fashion way and execute those queries.
@@ -1403,20 +1396,6 @@ export class SelectQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
             allSelects.push({ selection: "*" });
 
         let lock: string = "";
-        if (this.connection.driver instanceof SqlServerDriver) {
-            switch (this.expressionMap.lockMode) {
-                case "pessimistic_read":
-                    lock = " WITH (HOLDLOCK, ROWLOCK)";
-                    break;
-                case "pessimistic_write":
-                    lock = " WITH (UPDLOCK, ROWLOCK)";
-                    break;
-                case "dirty_read":
-                    lock = " WITH (NOLOCK)";
-                    break;
-            }
-        }
-
         // create a selection query
         const froms = this.expressionMap.aliases
             .filter(alias => alias.type === "from" && (alias.tablePath || alias.subQuery))
@@ -1583,59 +1562,12 @@ export class SelectQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
             limit = this.expressionMap.take;
         }
 
-        if (this.connection.driver instanceof SqlServerDriver) {
-            // Due to a limitation in SQL Server's parser implementation it does not support using
-            // OFFSET or FETCH NEXT without an ORDER BY clause being provided. In cases where the
-            // user does not request one we insert a dummy ORDER BY that does nothing and should
-            // have no effect on the query planner or on the order of the results returned.
-            // https://dba.stackexchange.com/a/193799
-            let prefix = "";
-            if ((limit || offset) && Object.keys(this.expressionMap.allOrderBys).length <= 0) {
-                prefix = " ORDER BY (SELECT NULL)";
-            }
-
-            if (limit && offset)
-                return prefix + " OFFSET " + offset + " ROWS FETCH NEXT " + limit + " ROWS ONLY";
-            if (limit)
-                return prefix + " OFFSET 0 ROWS FETCH NEXT " + limit + " ROWS ONLY";
-            if (offset)
-                return prefix + " OFFSET " + offset + " ROWS";
-
-        } else if (this.connection.driver instanceof MysqlDriver || this.connection.driver instanceof AuroraDataApiDriver || this.connection.driver instanceof SapDriver) {
-
-            if (limit && offset)
-                return " LIMIT " + limit + " OFFSET " + offset;
-            if (limit)
-                return " LIMIT " + limit;
-            if (offset)
-                throw new OffsetWithoutLimitNotSupportedError();
-
-        } else if (this.connection.driver instanceof AbstractSqliteDriver) {
-
-            if (limit && offset)
-                return " LIMIT " + limit + " OFFSET " + offset;
-            if (limit)
-                return " LIMIT " + limit;
-            if (offset)
-                return " LIMIT -1 OFFSET " + offset;
-
-        } else if (this.connection.driver instanceof OracleDriver) {
-
-            if (limit && offset)
-                return " OFFSET " + offset + " ROWS FETCH NEXT " + limit + " ROWS ONLY";
-            if (limit)
-                return " FETCH NEXT " + limit + " ROWS ONLY";
-            if (offset)
-                return " OFFSET " + offset + " ROWS";
-
-        } else {
-            if (limit && offset)
-                return " LIMIT " + limit + " OFFSET " + offset;
-            if (limit)
-                return " LIMIT " + limit;
-            if (offset)
-                return " OFFSET " + offset;
-        }
+        if (limit && offset)
+            return " LIMIT " + limit + " OFFSET " + offset;
+        if (limit)
+            return " LIMIT " + limit;
+        if (offset)
+            return " OFFSET " + offset;
 
         return "";
     }
@@ -1647,27 +1579,14 @@ export class SelectQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
         const driver = this.connection.driver;
         switch (this.expressionMap.lockMode) {
             case "pessimistic_read":
-                if (driver instanceof MysqlDriver || driver instanceof AuroraDataApiDriver) {
-                    return " LOCK IN SHARE MODE";
-
-                } else if (driver instanceof PostgresDriver) {
+                if (driver instanceof PostgresDriver) {
                     return " FOR SHARE";
-
-                } else if (driver instanceof OracleDriver) {
-                    return " FOR UPDATE";
-
-                } else if (driver instanceof SqlServerDriver) {
-                    return "";
-
                 } else {
                     throw new LockNotSupportedOnGivenDriverError();
                 }
             case "pessimistic_write":
-                if (driver instanceof MysqlDriver || driver instanceof AuroraDataApiDriver || driver instanceof PostgresDriver || driver instanceof OracleDriver) {
+                if (driver instanceof PostgresDriver) {
                     return " FOR UPDATE";
-
-                } else if (driver instanceof SqlServerDriver) {
-                    return "";
 
                 } else {
                     throw new LockNotSupportedOnGivenDriverError();
@@ -1741,18 +1660,9 @@ export class SelectQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
             const selection = this.expressionMap.selects.find(select => select.selection === aliasName + "." + column.propertyPath);
             let selectionPath = this.escape(aliasName) + "." + this.escape(column.databaseName);
             if (this.connection.driver.spatialTypes.indexOf(column.type) !== -1) {
-                if (this.connection.driver instanceof MysqlDriver || this.connection.driver instanceof AuroraDataApiDriver) {
-                    const useLegacy = this.connection.driver.options.legacySpatialSupport;
-                    const asText = useLegacy ? "AsText" : "ST_AsText";
-                    selectionPath = `${asText}(${selectionPath})`;
-                }
-
                 if (this.connection.driver instanceof PostgresDriver)
                     // cast to JSON to trigger parsing in the driver
                     selectionPath = `ST_AsGeoJSON(${selectionPath})::json`;
-
-                if (this.connection.driver instanceof SqlServerDriver)
-                    selectionPath = `${selectionPath}.ToString()`;
             }
             return {
                 selection: selectionPath,
@@ -1781,18 +1691,10 @@ export class SelectQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
         const distinctAlias = this.escape(mainAlias);
         let countSql: string = "";
         if (metadata.hasMultiplePrimaryKeys) {
-            if (this.connection.driver instanceof AbstractSqliteDriver) {
-                countSql = `COUNT(DISTINCT(` + metadata.primaryColumns.map((primaryColumn, index) => {
-                    const propertyName = this.escape(primaryColumn.databaseName);
-                    return `${distinctAlias}.${propertyName}`;
-                }).join(" || ") + ")) as \"cnt\"";
-
-            } else {
-                countSql = `COUNT(DISTINCT(CONCAT(` + metadata.primaryColumns.map((primaryColumn, index) => {
-                    const propertyName = this.escape(primaryColumn.databaseName);
-                    return `${distinctAlias}.${propertyName}`;
-                }).join(", ") + "))) as \"cnt\"";
-            }
+            countSql = `COUNT(DISTINCT(CONCAT(` + metadata.primaryColumns.map((primaryColumn, index) => {
+                const propertyName = this.escape(primaryColumn.databaseName);
+                return `${distinctAlias}.${propertyName}`;
+            }).join(", ") + "))) as \"cnt\"";
 
         } else {
             countSql = `COUNT(DISTINCT(` + metadata.primaryColumns.map((primaryColumn, index) => {

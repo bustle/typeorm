@@ -11,11 +11,8 @@ import {Repository} from "./repository/Repository";
 import {EntityManager} from "./entity-manager/EntityManager";
 import {PlatformTools} from "./platform/PlatformTools";
 import {TreeRepository} from "./repository/TreeRepository";
-import {MongoRepository} from "./repository/MongoRepository";
 import {ConnectionOptionsReader} from "./connection/ConnectionOptionsReader";
 import {PromiseUtils} from "./util/PromiseUtils";
-import {MongoEntityManager} from "./entity-manager/MongoEntityManager";
-import {SqljsEntityManager} from "./entity-manager/SqljsEntityManager";
 import {SelectQueryBuilder} from "./query-builder/SelectQueryBuilder";
 import {EntityTarget} from "./common/EntityTarget";
 
@@ -108,7 +105,6 @@ export * from "./repository/AbstractRepository";
 export * from "./repository/Repository";
 export * from "./repository/BaseEntity";
 export * from "./repository/TreeRepository";
-export * from "./repository/MongoRepository";
 export * from "./repository/RemoveOptions";
 export * from "./repository/SaveOptions";
 export * from "./schema-builder/table/TableCheck";
@@ -118,9 +114,7 @@ export * from "./schema-builder/table/TableForeignKey";
 export * from "./schema-builder/table/TableIndex";
 export * from "./schema-builder/table/TableUnique";
 export * from "./schema-builder/table/Table";
-export * from "./driver/mongodb/typings";
 export * from "./driver/types/DatabaseType";
-export * from "./driver/sqlserver/MssqlParameter";
 
 export {ConnectionOptionsReader} from "./connection/ConnectionOptionsReader";
 export {Connection} from "./connection/Connection";
@@ -139,7 +133,6 @@ export {InsertResult} from "./query-builder/result/InsertResult";
 export {UpdateResult} from "./query-builder/result/UpdateResult";
 export {DeleteResult} from "./query-builder/result/DeleteResult";
 export {QueryRunner} from "./query-runner/QueryRunner";
-export {MongoEntityManager} from "./entity-manager/MongoEntityManager";
 export {Migration} from "./migration/Migration";
 export {MigrationExecutor} from "./migration/MigrationExecutor";
 export {MigrationInterface} from "./migration/MigrationInterface";
@@ -260,23 +253,6 @@ export function getManager(connectionName: string = "default"): EntityManager {
 }
 
 /**
- * Gets MongoDB entity manager from the connection.
- * If connection name wasn't specified, then "default" connection will be retrieved.
- */
-export function getMongoManager(connectionName: string = "default"): MongoEntityManager {
-    return getConnectionManager().get(connectionName).manager as MongoEntityManager;
-}
-
-/**
- * Gets Sqljs entity manager from connection name.
- * "default" connection is used, when no name is specified.
- * Only works when Sqljs driver is used.
- */
-export function getSqljsManager(connectionName: string = "default"): SqljsEntityManager {
-    return getConnectionManager().get(connectionName).manager as SqljsEntityManager;
-}
-
-/**
  * Gets repository for the given entity class.
  */
 export function getRepository<Entity>(entityClass: EntityTarget<Entity>, connectionName: string = "default"): Repository<Entity> {
@@ -295,13 +271,6 @@ export function getTreeRepository<Entity>(entityClass: EntityTarget<Entity>, con
  */
 export function getCustomRepository<T>(customRepository: ObjectType<T>, connectionName: string = "default"): T {
     return getConnectionManager().get(connectionName).getCustomRepository(customRepository);
-}
-
-/**
- * Gets mongodb repository for the given entity class or name.
- */
-export function getMongoRepository<Entity>(entityClass: EntityTarget<Entity>, connectionName: string = "default"): MongoRepository<Entity> {
-    return getConnectionManager().get(connectionName).getMongoRepository<Entity>(entityClass);
 }
 
 /**

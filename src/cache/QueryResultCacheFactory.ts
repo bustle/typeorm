@@ -1,4 +1,3 @@
-import {RedisQueryResultCache} from "./RedisQueryResultCache";
 import {DbQueryResultCache} from "./DbQueryResultCache";
 import {QueryResultCache} from "./QueryResultCache";
 import {Connection} from "../connection/Connection";
@@ -32,11 +31,7 @@ export class QueryResultCacheFactory {
             return cache.provider(this.connection);
         }
 
-        if (cache.type === "redis" || cache.type === "ioredis" || cache.type === "ioredis/cluster") {
-            return new RedisQueryResultCache(this.connection, cache.type);
-        } else {
-            return new DbQueryResultCache(this.connection);
-        }
+        return new DbQueryResultCache(this.connection);
     }
 
 }
