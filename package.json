@@ -1,8 +1,8 @@
 {
-  "name": "typeorm",
+  "name": "@bustle/typeorm-postgres",
   "private": true,
   "version": "0.2.26",
-  "description": "Data-Mapper ORM for TypeScript, ES7, ES6, ES5. Supports MySQL, PostgreSQL, MariaDB, SQLite, MS SQL Server, Oracle, MongoDB databases.",
+  "description": "Fork of typeorm, a Data-Mapper ORM for TypeScript. Only supports PostgreSQL.",
   "license": "MIT",
   "readmeFilename": "README.md",
   "author": {
@@ -38,18 +38,8 @@
     "orm",
     "typescript",
     "typescript-orm",
-    "mysql",
-    "mysql-orm",
     "postgresql",
-    "postgresql-orm",
-    "mariadb",
-    "mariadb-orm",
-    "sqlite",
-    "sqlite-orm",
-    "sql-server",
-    "sql-server-orm",
-    "oracle",
-    "oracle-orm"
+    "postgresql-orm"
   ],
   "devDependencies": {
     "@types/app-root-path": "^1.2.4",
