@@ -16,7 +16,7 @@ export class PlatformTools {
     /**
      * Type of the currently running platform.
      */
-    static type: "browser"|"node" = "node";
+    static type: "node" = "node";
 
     /**
      * Gets global variable where global stuff can be stored.

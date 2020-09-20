@@ -51,84 +51,6 @@ export class Gulpfile {
     }
 
     // -------------------------------------------------------------------------
-    // Build and packaging for browser
-    // -------------------------------------------------------------------------
-
-    /**
-     * Copies all source files into destination folder in a correct structure.
-     */
-    @Task()
-    browserCopySources() {
-        return gulp.src([
-            "./src/**/*.ts",
-            "!./src/commands/*.ts",
-            "!./src/cli.ts",
-            "!./src/typeorm.ts",
-            "!./src/typeorm-model-shim.ts",
-            "!./src/platform/PlatformTools.ts"
-        ])
-        .pipe(gulp.dest("./build/browser/src"));
-    }
-
-    /**
-     * Replaces PlatformTools with browser-specific implementation called BrowserPlatformTools.
-     */
-    @Task()
-    browserCopyDirectoryExportedClassesLoader() {
-        return gulp.src("./src/platform/BrowserDirectoryExportedClassesLoader.template")
-            .pipe(rename("BrowserDirectoryExportedClassesLoader.ts"))
-            .pipe(gulp.dest("./build/browser/src/platform"));
-    }
-    /**
-     * Replaces PlatformTools with browser-specific implementation called BrowserPlatformTools.
-     */
-    @Task()
-    browserCopyPlatformTools() {
-        return gulp.src("./src/platform/BrowserPlatformTools.template")
-            .pipe(rename("PlatformTools.ts"))
-            .pipe(gulp.dest("./build/browser/src/platform"));
-    }
-
-    /**
-     * Adds dummy classes for disabled drivers (replacement is done via browser entry point in package.json)
-     */
-    @Task()
-    browserCopyDisabledDriversDummy() {
-        return gulp.src("./src/platform/BrowserDisabledDriversDummy.template")
-            .pipe(rename("BrowserDisabledDriversDummy.ts"))
-            .pipe(gulp.dest("./build/browser/src/platform"));
-    }
-
-    @MergedTask()
-    browserCompile() {
-        const tsProject = ts.createProject("tsconfig.json", {
-            module: "es2015",
-            "lib": ["es5", "es6", "dom"],
-            typescript: require("typescript")
-        });
-        const tsResult = gulp.src([
-            "./build/browser/src/**/*.ts",
-            "./node_modules/reflect-metadata/**/*.d.ts"
-        ])
-            .pipe(sourcemaps.init())
-            .pipe(tsProject());
-
-        return [
-            tsResult.dts.pipe(gulp.dest("./build/package/browser")),
-            tsResult.js
-                .pipe(sourcemaps.write(".", { sourceRoot: "", includeContent: true }))
-                .pipe(gulp.dest("./build/package/browser"))
-        ];
-    }
-
-    @Task()
-    browserClearPackageDirectory(cb: Function) {
-        return del([
-            "./build/browser/**"
-        ]);
-    }
-
-    // -------------------------------------------------------------------------
     // Main Packaging and Publishing tasks
     // -------------------------------------------------------------------------
 
@@ -242,11 +164,9 @@ export class Gulpfile {
     package() {
         return [
             "clean",
-            ["browserCopySources", "browserCopyPlatformTools", "browserCopyDisabledDriversDummy", "browserCopyDirectoryExportedClassesLoader"],
-            ["packageCompile", "browserCompile"],
+            "packageCompile",
             "packageMoveCompiledFiles",
             [
-                "browserClearPackageDirectory",
                 "packageClearPackageDirectory",
                 "packageReplaceReferences",
                 "packagePreparePackageFile",
