@@ -34,20 +34,14 @@ export class PlatformTools {
         // this is useful when we are using typeorm package globally installed and it accesses drivers
         // that are not installed globally
 
-        try {
+        // switch case to explicit require statements for webpack compatibility.
 
-            // switch case to explicit require statements for webpack compatibility.
-
-            switch (name) {
-                /**
-                * postgres
-                */
-                case "pg":
-                    return require("pg");
-            }
-
-        } catch (err) {
-            return require(path.resolve(process.cwd() + "/node_modules/" + name));
+        switch (name) {
+            /**
+            * postgres
+            */
+            case "pg":
+                return require("pg");
         }
 
         // If nothing above matched and we get here, the package was not listed within PlatformTools
