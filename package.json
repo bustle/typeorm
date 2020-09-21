@@ -12,7 +12,7 @@
   "main": "./index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bustle/typeorm"
+    "url": "https://github.com/bustle/typeorm-postgres"
   },
   "tags": [
     "orm",
