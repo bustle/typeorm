@@ -1,7 +1,6 @@
 import {createConnection} from "../index";
 import {Connection} from "../connection/Connection";
 import {ConnectionOptionsReader} from "../connection/ConnectionOptionsReader";
-import {highlight} from "cli-highlight";
 import * as yargs from "yargs";
 import chalk from "chalk";
 
@@ -59,7 +58,7 @@ export class SchemaLogCommand implements yargs.CommandModule {
                     let sqlString = upQuery.query;
                     sqlString = sqlString.trim();
                     sqlString = sqlString.substr(-1) === ";" ? sqlString : sqlString + ";";
-                    console.log(highlight(sqlString));
+                    console.log(sqlString);
                 });
             }
             await connection.close();

@@ -84,7 +84,6 @@
     "app-root-path": "^3.0.0",
     "buffer": "^5.5.0",
     "chalk": "^4.1.0",
-    "cli-highlight": "^2.1.4",
     "debug": "^4.2.0",
     "dotenv": "^8.2.0",
     "glob": "^7.1.6",
