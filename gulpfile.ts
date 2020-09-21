@@ -12,7 +12,6 @@ const rename = require("gulp-rename");
 const mocha = require("gulp-mocha");
 const chai = require("chai");
 const eslint = require("gulp-eslint");
-const sourcemaps = require("gulp-sourcemaps");
 const istanbul = require("gulp-istanbul");
 const remapIstanbul = require("remap-istanbul/lib/gulpRemapIstanbul");
 const ts = require("gulp-typescript");
@@ -87,13 +86,11 @@ export class Gulpfile {
         const tsResult = gulp.src([
             "./src/**/*.ts"
         ])
-            .pipe(sourcemaps.init())
             .pipe(tsProject());
 
         return [
             tsResult.dts.pipe(gulp.dest("./build/package")),
             tsResult.js
-                .pipe(sourcemaps.write(".", { sourceRoot: "", includeContent: true }))
                 .pipe(gulp.dest("./build/package"))
         ];
     }
@@ -204,7 +201,7 @@ export class Gulpfile {
         return gulp.src(["./src/**/*.ts", "./test/**/*.ts", "./sample/**/*.ts"])
             .pipe(eslint())
             .pipe(eslint.format("stylish"))
-            .pipe(eslint.failAfterError())
+            .pipe(eslint.failAfterError());
     }
 
     /**
