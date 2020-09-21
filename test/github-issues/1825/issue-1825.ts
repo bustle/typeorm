@@ -8,7 +8,7 @@ describe("github issues > #1825 Invalid field values being loaded with long came
     let connections: Connection[];
     before(async () => (connections = await createTestingConnections({
             entities: [__dirname + "/entity/*{.js,.ts}"],
-            enabledDrivers: ["mysql", "postgres", "mariadb"]
+            enabledDrivers: ["postgres"]
         }))
     );
     beforeEach(() => reloadTestingDatabases(connections));

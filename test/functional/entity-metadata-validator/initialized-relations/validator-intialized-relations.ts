@@ -14,7 +14,7 @@ describe("entity-metadata-validator > initialized relations", () => {
 
     it("should throw error if relation with initialized array was found on many-to-many relation", () => {
         const connection = new Connection({ // dummy connection options, connection won't be established anyway
-            type: "mysql",
+            type: "postgres",
             host: "localhost",
             username: "test",
             password: "test",
@@ -29,7 +29,7 @@ describe("entity-metadata-validator > initialized relations", () => {
 
     it("should throw error if relation with initialized array was found on one-to-many relation", () => {
         const connection = new Connection({ // dummy connection options, connection won't be established anyway
-            type: "mysql",
+            type: "postgres",
             host: "localhost",
             username: "test",
             password: "test",
@@ -44,7 +44,7 @@ describe("entity-metadata-validator > initialized relations", () => {
 
     it("should not throw error if relation with initialized array was not found", () => {
         const connection = new Connection({ // dummy connection options, connection won't be established anyway
-            type: "mysql",
+            type: "postgres",
             host: "localhost",
             username: "test",
             password: "test",
@@ -59,7 +59,7 @@ describe("entity-metadata-validator > initialized relations", () => {
 
     it("should not throw error if relation with initialized array was found, but persistence for this relation was disabled", () => {
         const connection = new Connection({ // dummy connection options, connection won't be established anyway
-            type: "mysql",
+            type: "postgres",
             host: "localhost",
             username: "test",
             password: "test",

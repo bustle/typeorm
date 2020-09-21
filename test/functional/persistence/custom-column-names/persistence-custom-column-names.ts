@@ -17,7 +17,7 @@ describe("persistence > custom-column-names", function() {
     // connect to db
     let connection: Connection;
     before(async () => {
-        const options = setupSingleTestingConnection("mysql", {
+        const options = setupSingleTestingConnection("postgres", {
             entities: [Post, Category, CategoryMetadata]
         });
         if (!options)
@@ -53,7 +53,7 @@ describe("persistence > custom-column-names", function() {
     // -------------------------------------------------------------------------
     // Specifications
     // -------------------------------------------------------------------------
-    
+
     describe("attach exist entity to exist entity with many-to-one relation", function() {
         if (!connection)
             return;

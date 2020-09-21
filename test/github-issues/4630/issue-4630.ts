@@ -11,7 +11,7 @@ describe("github issues > #4630 Enum string not escaping resulting in broken mig
         entities: [__dirname + "/entity/*{.js,.ts}"],
         schemaCreate: true,
         dropSchema: true,
-        enabledDrivers: ["mysql", "postgres"]
+        enabledDrivers: ["postgres"]
     }));
     beforeEach(() => reloadTestingDatabases(connections));
     after(() => closeTestingConnections(connections));

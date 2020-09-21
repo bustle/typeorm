@@ -15,16 +15,7 @@ describe("github issues > #4415 allow beautify generated migrations", () => {
     let connectionOptionsReader: ConnectionOptionsReader;
     let baseConnectionOptions: ConnectionOptions;
 
-    const enabledDrivers = [
-        "postgres",
-        "mssql",
-        "mysql",
-        "mariadb",
-        "sqlite",
-        "better-sqlite3",
-        "oracle",
-        "cockroachdb"
-    ] as DatabaseType[];
+    const enabledDrivers = ["postgres"] as DatabaseType[];
 
     // simulate args: `npm run typeorm migration:run -- -n test-migration -d test-directory`
     const testHandlerArgs = (options: Record<string, any>) => ({
@@ -93,7 +84,7 @@ describe("github issues > #4415 allow beautify generated migrations", () => {
                 "connection": connectionOption.name,
                 "pretty": true
             }));
-            
+
             // compare against "pretty" test strings in results-templates.ts
             for (const pretty of resultsTemplates[connectionOption.type as string].pretty) {
                 sinon.assert.calledWith(

@@ -1,10 +1,6 @@
 import {ObjectLiteral} from "../../../../src/common/ObjectLiteral";
 import {Connection} from "../../../../src/connection/Connection";
-import {OracleDriver} from "../../../../src/driver/oracle/OracleDriver";
 import {PostgresConnectionOptions} from "../../../../src/driver/postgres/PostgresConnectionOptions";
-import {MssqlParameter} from "../../../../src/driver/sqlserver/MssqlParameter";
-import {SqlServerConnectionOptions} from "../../../../src/driver/sqlserver/SqlServerConnectionOptions";
-import {SqlServerDriver} from "../../../../src/driver/sqlserver/SqlServerDriver";
 import {QueryRunner} from "../../../../src/query-runner/QueryRunner";
 import {Table} from "../../../../src/schema-builder/table/Table";
 import {QueryResultCache} from "../../../../src/cache/QueryResultCache";
@@ -27,7 +23,7 @@ export class MockQueryResultCache implements QueryResultCache {
 
     constructor(protected connection: Connection) {
 
-        const options = <SqlServerConnectionOptions|PostgresConnectionOptions>this.connection.driver.options;
+        const options = <PostgresConnectionOptions>this.connection.driver.options;
         const cacheOptions = typeof this.connection.options.cache === "object" ? this.connection.options.cache : {};
         const cacheTableName = cacheOptions.tableName || "mock-query-result-cache";
 
@@ -120,19 +116,13 @@ export class MockQueryResultCache implements QueryResultCache {
         if (options.identifier) {
             return qb
                 .where(`${qb.escape("cache")}.${qb.escape("identifier")} = :identifier`)
-                .setParameters({ identifier: this.connection.driver instanceof SqlServerDriver ? new MssqlParameter(options.identifier, "nvarchar") : options.identifier })
+                .setParameters({ identifier: options.identifier })
                 .getRawOne();
 
         } else if (options.query) {
-            if (this.connection.driver instanceof OracleDriver) {
-                return qb
-                    .where(`dbms_lob.compare(${qb.escape("cache")}.${qb.escape("query")}, :query) = 0`, { query: options.query })
-                    .getRawOne();
-            }
-
             return qb
                 .where(`${qb.escape("cache")}.${qb.escape("query")} = :query`)
-                .setParameters({ query: this.connection.driver instanceof SqlServerDriver ? new MssqlParameter(options.query, "nvarchar") : options.query })
+                .setParameters({ query: options.query })
                 .getRawOne();
         }
 
@@ -154,15 +144,6 @@ export class MockQueryResultCache implements QueryResultCache {
         queryRunner = this.getQueryRunner(queryRunner);
 
         let insertedValues: ObjectLiteral = options;
-        if (this.connection.driver instanceof SqlServerDriver) { // todo: bad abstraction, re-implement this part, probably better if we create an entity metadata for cache table
-            insertedValues = {
-                identifier: new MssqlParameter(options.identifier, "nvarchar"),
-                time: new MssqlParameter(options.time, "bigint"),
-                duration: new MssqlParameter(options.duration, "int"),
-                query: new MssqlParameter(options.query, "nvarchar"),
-                result: new MssqlParameter(options.result, "nvarchar"),
-            };
-        }
 
         if (savedCache && savedCache.identifier) { // if exist then update
             const qb = queryRunner.manager
@@ -179,12 +160,7 @@ export class MockQueryResultCache implements QueryResultCache {
                 .update(this.queryResultCacheTable)
                 .set(insertedValues);
 
-            if (this.connection.driver instanceof OracleDriver) {
-                qb.where(`dbms_lob.compare("query", :condition) = 0`, { condition: insertedValues.query });
-
-            } else {
-                qb.where(`${qb.escape("query")} = :condition`, { condition: insertedValues.query });
-            }
+            qb.where(`${qb.escape("query")} = :condition`, { condition: insertedValues.query });
 
             await qb.execute();
 

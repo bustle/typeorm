@@ -1,11 +1,7 @@
 import "reflect-metadata";
-import {AuroraDataApiDriver} from "../../../src/driver/aurora-data-api/AuroraDataApiDriver";
-import {SapDriver} from "../../../src/driver/sap/SapDriver";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../utils/test-utils";
 import {Connection} from "../../../src/connection/Connection";
 import {Animal} from "./entity/Animal";
-import {OffsetWithoutLimitNotSupportedError} from "../../../src/error/OffsetWithoutLimitNotSupportedError";
-import {MysqlDriver} from "../../../src/driver/mysql/MysqlDriver";
 
 describe("github issues > #1099 BUG - QueryBuilder MySQL skip sql is wrong", () => {
 
@@ -28,11 +24,7 @@ describe("github issues > #1099 BUG - QueryBuilder MySQL skip sql is wrong", () 
             .orderBy("a.id")
             .skip(1);
 
-        if (connection.driver instanceof MysqlDriver || connection.driver instanceof AuroraDataApiDriver  || connection.driver instanceof SapDriver ) {
-            await qb.getManyAndCount().should.be.rejectedWith(OffsetWithoutLimitNotSupportedError);
-        } else {
-            await qb.getManyAndCount().should.eventually.be.eql([[{ id: 2, name: "dog", categories: [] }, { id: 3, name: "bear", categories: [] }, { id: 4, name: "snake", categories: [] }, ], 4]);
-        }
+        await qb.getManyAndCount().should.eventually.be.eql([[{ id: 2, name: "dog", categories: [] }, { id: 3, name: "bear", categories: [] }, { id: 4, name: "snake", categories: [] }, ], 4]);
     })));
 
 });

@@ -1,5 +1,4 @@
 import "reflect-metadata";
-import {CockroachDriver} from "../../../../../src/driver/cockroachdb/CockroachDriver";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../../../utils/test-utils";
 import {Connection} from "../../../../../src/connection/Connection";
 import {EntityMetadata} from "../../../../../src/metadata/EntityMetadata";
@@ -42,19 +41,11 @@ describe("entity-schema > indices > basic", () => {
         const table = await queryRunner.getTable("person");
         await queryRunner.release();
 
-        // CockroachDB stores unique indices as UNIQUE constraints
-        if (connection.driver instanceof CockroachDriver) {
-            expect(table!.uniques.length).to.be.equal(1);
-            expect(table!.uniques[0].name).to.be.equal("IDX_TEST");
-            expect(table!.uniques[0].columnNames.length).to.be.equal(2);
-            expect(table!.uniques[0].columnNames).to.deep.include.members(["FirstName", "LastName"]);
-        } else {
-            expect(table!.indices.length).to.be.equal(1);
-            expect(table!.indices[0].name).to.be.equal("IDX_TEST");
-            expect(table!.indices[0].isUnique).to.be.true;
-            expect(table!.indices[0].columnNames.length).to.be.equal(2);
-            expect(table!.indices[0].columnNames).to.deep.include.members(["FirstName", "LastName"]);
-        }
+        expect(table!.indices.length).to.be.equal(1);
+        expect(table!.indices[0].name).to.be.equal("IDX_TEST");
+        expect(table!.indices[0].isUnique).to.be.true;
+        expect(table!.indices[0].columnNames.length).to.be.equal(2);
+        expect(table!.indices[0].columnNames).to.deep.include.members(["FirstName", "LastName"]);
 
     })));
 

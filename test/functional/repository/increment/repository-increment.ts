@@ -146,7 +146,7 @@ describe("repository > increment method", () => {
         let connections: Connection[];
         before(async () => connections = await createTestingConnections({
             entities: [PostBigInt],
-            enabledDrivers: ["mysql", "mariadb", "postgres", "sap"],
+            enabledDrivers: ["postgres"],
             // logging: true
         }));
         beforeEach(() => reloadTestingDatabases(connections));

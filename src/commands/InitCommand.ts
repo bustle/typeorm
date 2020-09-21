@@ -38,7 +38,7 @@ export class InitCommand implements yargs.CommandModule {
 
     async handler(args: yargs.Arguments) {
         try {
-            const database: string = args.database as any || "mysql";
+            const database: string = args.database as any || "postgres";
             const isExpress = args.express !== undefined ? true : false;
             const isDocker = args.docker !== undefined ? true : false;
             const basePath = process.cwd() + (args.name ? ("/" + args.name) : "");
@@ -87,38 +87,6 @@ export class InitCommand implements yargs.CommandModule {
     protected static getOrmConfigTemplate(database: string): string {
         const options: ObjectLiteral = { };
         switch (database) {
-            case "mysql":
-                Object.assign(options, {
-                    type: "mysql",
-                    host: "localhost",
-                    port: 3306,
-                    username: "test",
-                    password: "test",
-                    database: "test",
-                });
-                break;
-            case "mariadb":
-                Object.assign(options, {
-                    type: "mariadb",
-                    host: "localhost",
-                    port: 3306,
-                    username: "test",
-                    password: "test",
-                    database: "test",
-                });
-                break;
-            case "sqlite":
-                Object.assign(options, {
-                    type: "sqlite",
-                    "database": "database.sqlite",
-                });
-                break;
-            case "better-sqlite3":
-                Object.assign(options, {
-                    type: "better-sqlite3",
-                    "database": "database.sqlite",
-                });
-                break;
             case "postgres":
                 Object.assign(options, {
                     "type": "postgres",
@@ -126,41 +94,6 @@ export class InitCommand implements yargs.CommandModule {
                     "port": 5432,
                     "username": "test",
                     "password": "test",
-                    "database": "test",
-                });
-                break;
-            case "cockroachdb":
-                Object.assign(options, {
-                    "type": "cockroachdb",
-                    "host": "localhost",
-                    "port": 26257,
-                    "username": "root",
-                    "password": "",
-                    "database": "defaultdb",
-                });
-                break;
-            case "mssql":
-                Object.assign(options, {
-                    "type": "mssql",
-                    "host": "localhost",
-                    "username": "sa",
-                    "password": "Admin12345",
-                    "database": "tempdb",
-                });
-                break;
-            case "oracle":
-                Object.assign(options, {
-                    "type": "oracle",
-                    "host": "localhost",
-                    "username": "system",
-                    "password": "oracle",
-                    "port": 1521,
-                    "sid": "xe.oracle.docker",
-                });
-                break;
-            case "mongodb":
-                Object.assign(options, {
-                    "type": "mongodb",
                     "database": "test",
                 });
                 break;
@@ -221,13 +154,13 @@ temp/`;
      * Gets contents of the user entity.
      */
     protected static getUserEntityTemplate(database: string): string {
-        return `import {Entity, ${ database === "mongodb" ? "ObjectIdColumn, ObjectID" : "PrimaryGeneratedColumn" }, Column} from "typeorm";
+        return `import {Entity, PrimaryGeneratedColumn, Column} from "typeorm";
 
 @Entity()
 export class User {
 
-    ${ database === "mongodb" ? "@ObjectIdColumn()" : "@PrimaryGeneratedColumn()" }
-    id: ${ database === "mongodb" ? "ObjectID" : "number" };
+    @PrimaryGeneratedColumn()
+    id: "number";
 
     @Column()
     firstName: string;
@@ -407,36 +340,6 @@ createConnection().then(async connection => {
     protected static getDockerComposeTemplate(database: string): string {
 
         switch (database) {
-            case "mysql":
-                return `version: '3'
-services:
-
-  mysql:
-    image: "mysql:5.7.10"
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: "admin"
-      MYSQL_USER: "test"
-      MYSQL_PASSWORD: "test"
-      MYSQL_DATABASE: "test"
-
-`;
-            case "mariadb":
-                return `version: '3'
-services:
-
-  mariadb:
-    image: "mariadb:10.1.16"
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: "admin"
-      MYSQL_USER: "test"
-      MYSQL_PASSWORD: "test"
-      MYSQL_DATABASE: "test"
-
-`;
             case "postgres":
                 return `version: '3'
 services:
@@ -449,49 +352,6 @@ services:
       POSTGRES_USER: "test"
       POSTGRES_PASSWORD: "test"
       POSTGRES_DB: "test"
-
-`;
-            case "cockroachdb":
-                return `version: '3'
-services:
-
-  cockroachdb:
-    image: "cockroachdb/cockroach:v2.1.4"
-    command: start --insecure
-    ports:
-      - "26257:26257"
-
-`;
-            case "sqlite":
-            case "better-sqlite3":
-                return `version: '3'
-services:
-`;
-            case "oracle":
-                throw new Error(`You cannot initialize a project with docker for Oracle driver yet.`); // todo: implement for oracle as well
-
-            case "mssql":
-                return `version: '3'
-services:
-
-  mssql:
-    image: "microsoft/mssql-server-linux:rc2"
-    ports:
-      - "1433:1433"
-    environment:
-      SA_PASSWORD: "Admin12345"
-      ACCEPT_EULA: "Y"
-
-`;
-            case "mongodb":
-                return `version: '3'
-services:
-
-  mongodb:
-    image: "mongo:4.0.6"
-    container_name: "typeorm-mongodb"
-    ports:
-      - "27017:27017"
 
 `;
         }
@@ -542,28 +402,8 @@ Steps to run this project:
         });
 
         switch (database) {
-            case "mysql":
-            case "mariadb":
-                packageJson.dependencies["mysql"] = "^2.14.1";
-                break;
             case "postgres":
-            case "cockroachdb":
                 packageJson.dependencies["pg"] = "^7.3.0";
-                break;
-            case "sqlite":
-                packageJson.dependencies["sqlite3"] = "^4.0.3";
-                break;
-            case "better-sqlite3":
-                packageJson.dependencies["better-sqlite3"] = "^7.0.0";
-                break;
-            case "oracle":
-                packageJson.dependencies["oracledb"] = "^1.13.1";
-                break;
-            case "mssql":
-                packageJson.dependencies["mssql"] = "^4.0.4";
-                break;
-            case "mongodb":
-                packageJson.dependencies["mongodb"] = "^3.0.8";
                 break;
         }
 

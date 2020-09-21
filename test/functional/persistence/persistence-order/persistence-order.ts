@@ -13,7 +13,7 @@ describe("persistence > order of persistence execution operations", () => {
 
         it("should throw CircularRelationsError", () => {
             const connection = new Connection({ // dummy connection options, connection won't be established anyway
-                type: "mysql",
+                type: "postgres",
                 host: "localhost",
                 username: "test",
                 password: "test",

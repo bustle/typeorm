@@ -1,6 +1,4 @@
 import "reflect-metadata";
-import {CockroachDriver} from "../../../../src/driver/cockroachdb/CockroachDriver";
-import {SapDriver} from "../../../../src/driver/sap/SapDriver";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../../utils/test-utils";
 import {Connection} from "../../../../src/connection/Connection";
 import {PostWithVersion} from "./entity/PostWithVersion";
@@ -12,11 +10,7 @@ import {OptimisticLockVersionMismatchError} from "../../../../src/error/Optimist
 import {OptimisticLockCanNotBeUsedError} from "../../../../src/error/OptimisticLockCanNotBeUsedError";
 import {NoVersionOrUpdateDateColumnError} from "../../../../src/error/NoVersionOrUpdateDateColumnError";
 import {PessimisticLockTransactionRequiredError} from "../../../../src/error/PessimisticLockTransactionRequiredError";
-import {MysqlDriver} from "../../../../src/driver/mysql/MysqlDriver";
 import {PostgresDriver} from "../../../../src/driver/postgres/PostgresDriver";
-import {SqlServerDriver} from "../../../../src/driver/sqlserver/SqlServerDriver";
-import {AbstractSqliteDriver} from "../../../../src/driver/sqlite-abstract/AbstractSqliteDriver";
-import {OracleDriver} from "../../../../src/driver/oracle/OracleDriver";
 import {LockNotSupportedOnGivenDriverError} from "../../../../src/error/LockNotSupportedOnGivenDriverError";
 
 describe("query builder > locking", () => {
@@ -29,9 +23,6 @@ describe("query builder > locking", () => {
     after(() => closeTestingConnections(connections));
 
     it("should not attach pessimistic read lock statement on query if locking is not used", () => Promise.all(connections.map(async connection => {
-        if (connection.driver instanceof AbstractSqliteDriver || connection.driver instanceof SapDriver)
-            return;
-
         const sql = connection.createQueryBuilder(PostWithVersion, "post")
             .where("post.id = :id", { id: 1 })
             .getSql();
@@ -42,9 +33,6 @@ describe("query builder > locking", () => {
     })));
 
     it("should throw error if pessimistic lock used without transaction", () => Promise.all(connections.map(async connection => {
-        if (connection.driver instanceof AbstractSqliteDriver || connection.driver instanceof SapDriver)
-            return;
-
         return Promise.all([
             connection.createQueryBuilder(PostWithVersion, "post")
                 .setLock("pessimistic_read")
@@ -59,9 +47,6 @@ describe("query builder > locking", () => {
     })));
 
     it("should not throw error if pessimistic lock used with transaction", () => Promise.all(connections.map(async connection => {
-        if (connection.driver instanceof AbstractSqliteDriver || connection.driver instanceof CockroachDriver || connection.driver instanceof SapDriver)
-            return;
-
         return connection.manager.transaction(entityManager => {
             return Promise.all([
                 entityManager.createQueryBuilder(PostWithVersion, "post")
@@ -100,43 +85,17 @@ describe("query builder > locking", () => {
     })));
 
     it("should attach pessimistic read lock statement on query if locking enabled", () => Promise.all(connections.map(async connection => {
-        if (connection.driver instanceof AbstractSqliteDriver || connection.driver instanceof CockroachDriver || connection.driver instanceof SapDriver)
-            return;
-
         const sql = connection.createQueryBuilder(PostWithVersion, "post")
             .setLock("pessimistic_read")
             .where("post.id = :id", { id: 1 })
             .getSql();
 
-        if (connection.driver instanceof MysqlDriver) {
-            expect(sql.indexOf("LOCK IN SHARE MODE") !== -1).to.be.true;
-
-        } else if (connection.driver instanceof PostgresDriver) {
+        if (connection.driver instanceof PostgresDriver) {
             expect(sql.indexOf("FOR SHARE") !== -1).to.be.true;
-
-        } else if (connection.driver instanceof OracleDriver) {
-            expect(sql.indexOf("FOR UPDATE") !== -1).to.be.true;
-
-        } else if (connection.driver instanceof SqlServerDriver) {
-            expect(sql.indexOf("WITH (HOLDLOCK, ROWLOCK)") !== -1).to.be.true;
         }
     })));
 
-    it("should attach dirty read lock statement on query if locking enabled", () => Promise.all(connections.map(async connection => {
-        if (!(connection.driver instanceof SqlServerDriver)) return;
-
-        const sql = connection.createQueryBuilder(PostWithVersion, "post")
-            .setLock("dirty_read")
-            .where("post.id = :id", { id: 1 })
-            .getSql();
-
-        expect(sql.indexOf("WITH (NOLOCK)") !== -1).to.be.true;
-    })));
-
     it("should not attach pessimistic write lock statement on query if locking is not used", () => Promise.all(connections.map(async connection => {
-        if (connection.driver instanceof AbstractSqliteDriver || connection.driver instanceof SapDriver)
-            return;
-
         const sql = connection.createQueryBuilder(PostWithVersion, "post")
             .where("post.id = :id", { id: 1 })
             .getSql();
@@ -146,19 +105,14 @@ describe("query builder > locking", () => {
     })));
 
     it("should attach pessimistic write lock statement on query if locking enabled", () => Promise.all(connections.map(async connection => {
-        if (connection.driver instanceof AbstractSqliteDriver || connection.driver instanceof CockroachDriver || connection.driver instanceof SapDriver)
-            return;
-
         const sql = connection.createQueryBuilder(PostWithVersion, "post")
             .setLock("pessimistic_write")
             .where("post.id = :id", { id: 1 })
             .getSql();
 
-        if (connection.driver instanceof MysqlDriver || connection.driver instanceof PostgresDriver || connection.driver instanceof OracleDriver) {
+        if (connection.driver instanceof PostgresDriver) {
             expect(sql.indexOf("FOR UPDATE") !== -1).to.be.true;
 
-        } else if (connection.driver instanceof SqlServerDriver) {
-            expect(sql.indexOf("WITH (UPDLOCK, ROWLOCK)") !== -1).to.be.true;
         }
 
     })));
@@ -284,10 +238,6 @@ describe("query builder > locking", () => {
 
     // skipped because inserted milliseconds are not always equal to what we say it to insert, unskip when needed
     it.skip("should not throw error if actual updated date and expected updated date are equal", () => Promise.all(connections.map(async connection => {
-
-        if (connection.driver instanceof SqlServerDriver)
-            return;
-
         const post = new PostWithUpdateDate();
         post.title = "New post";
         await connection.manager.save(post);
@@ -316,25 +266,6 @@ describe("query builder > locking", () => {
                 .where("post.id = :id", { id: 1 })
                 .getOne().should.not.be.rejected
         ]);
-    })));
-
-    it("should throw error if pessimistic locking not supported by given driver", () => Promise.all(connections.map(async connection => {
-        if (connection.driver instanceof AbstractSqliteDriver || connection.driver instanceof CockroachDriver || connection.driver instanceof SapDriver)
-            return connection.manager.transaction(entityManager => {
-                return Promise.all([
-                    entityManager.createQueryBuilder(PostWithVersion, "post")
-                        .setLock("pessimistic_read")
-                        .where("post.id = :id", { id: 1 })
-                        .getOne().should.be.rejectedWith(LockNotSupportedOnGivenDriverError),
-
-                    entityManager.createQueryBuilder(PostWithVersion, "post")
-                        .setLock("pessimistic_write")
-                        .where("post.id = :id", { id: 1 })
-                        .getOne().should.be.rejectedWith(LockNotSupportedOnGivenDriverError)
-                ]);
-            });
-
-        return;
     })));
 
     it("should throw error if for no key update locking not supported by given driver", () => Promise.all(connections.map(async connection => {

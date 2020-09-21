@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import {Connection} from "../../../src/connection/Connection";
-import {CockroachDriver} from "../../../src/driver/cockroachdb/CockroachDriver";
 import {closeTestingConnections, createTestingConnections} from "../../utils/test-utils";
 import {expect} from "chai";
 
@@ -43,12 +42,7 @@ describe("schema builder > drop column", () => {
         expect(studentTable!.findColumnByName("name")).to.be.undefined;
         expect(studentTable!.findColumnByName("faculty")).to.be.undefined;
 
-        // CockroachDB creates indices for foreign keys
-        if (connection.driver instanceof CockroachDriver) {
-            studentTable!.indices.length.should.be.equal(1);
-        } else {
-            studentTable!.indices.length.should.be.equal(0);
-        }
+        studentTable!.indices.length.should.be.equal(0);
         studentTable!.foreignKeys.length.should.be.equal(1);
 
     })));

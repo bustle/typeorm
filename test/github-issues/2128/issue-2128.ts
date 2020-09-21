@@ -10,7 +10,7 @@ describe("github issues > #2128 skip preparePersistentValue for value functions"
     let connections: Connection[];
     before(async () => connections = await createTestingConnections({
         entities: [__dirname + "/entity/*{.js,.ts}"],
-        enabledDrivers: ["postgres", "mysql"],
+        enabledDrivers: ["postgres"],
     }));
     beforeEach(() => reloadTestingDatabases(connections));
     after(() => closeTestingConnections(connections));

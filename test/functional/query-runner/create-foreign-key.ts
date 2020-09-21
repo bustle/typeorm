@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import {Connection} from "../../../src/connection/Connection";
-import {CockroachDriver} from "../../../src/driver/cockroachdb/CockroachDriver";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../utils/test-utils";
 import {Table} from "../../../src/schema-builder/table/Table";
 import {TableForeignKey} from "../../../src/schema-builder/table/TableForeignKey";
@@ -50,7 +49,7 @@ describe("query runner > create foreign key", () => {
                 },
                 {
                     name: "questionId",
-                    isUnique: connection.driver instanceof CockroachDriver, // CockroachDB requires UNIQUE constraints on referenced columns
+                    isUnique: false, // CockroachDB requires UNIQUE constraints on referenced columns
                     type: "int",
                 }
             ]

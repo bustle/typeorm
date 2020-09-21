@@ -21,7 +21,7 @@ describe("one-to-one", function() {
     // connect to db
     let connection: Connection;
     before(async function() {
-        const options = setupSingleTestingConnection("mysql", {
+        const options = setupSingleTestingConnection("postgres", {
             entities: [Post, PostDetails, PostCategory, PostMetadata, PostImage, PostInformation, PostAuthor],
         });
         if (!options)
@@ -64,7 +64,7 @@ describe("one-to-one", function() {
             return;
 
         let newPost: Post, details: PostDetails, savedPost: Post;
-        
+
         before(reloadDatabase);
 
         before(function() {
@@ -72,7 +72,7 @@ describe("one-to-one", function() {
             details.authorName = "Umed";
             details.comment = "this is post";
             details.metadata = "post,posting,postman";
-            
+
             newPost = new Post();
             newPost.text = "Hello post";
             newPost.title = "this is post title";
@@ -100,7 +100,7 @@ describe("one-to-one", function() {
             expectedPost.id = savedPost.id;
             expectedPost.text = savedPost.text;
             expectedPost.title = savedPost.title;
-            
+
             return postRepository.findOne(savedPost.id).should.eventually.eql(expectedPost);
         });
 
@@ -129,7 +129,7 @@ describe("one-to-one", function() {
             expectedPost.details.authorName = savedPost.details.authorName;
             expectedPost.details.comment = savedPost.details.comment;
             expectedPost.details.metadata = savedPost.details.metadata;
-            
+
             const post = await postRepository
                 .createQueryBuilder("post")
                 .leftJoinAndSelect("post.details", "details")
@@ -155,7 +155,7 @@ describe("one-to-one", function() {
             expectedDetails.post.id = savedPost.id;
             expectedDetails.post.text = savedPost.text;
             expectedDetails.post.title = savedPost.title;
-            
+
             return postDetailsRepository
                 .createQueryBuilder("details")
                 .leftJoinAndSelect("details.post", "post")
@@ -170,7 +170,7 @@ describe("one-to-one", function() {
             expectedPost.id = savedPost.id;
             expectedPost.text = savedPost.text;
             expectedPost.title = savedPost.title;
-            
+
             return postRepository
                 .createQueryBuilder("post")
                 .where("post.id=:id", { id: savedPost.id })
@@ -184,7 +184,7 @@ describe("one-to-one", function() {
             expectedDetails.authorName = savedPost.details.authorName;
             expectedDetails.comment = savedPost.details.comment;
             expectedDetails.metadata = savedPost.details.metadata;
-            
+
             return postDetailsRepository
                 .createQueryBuilder("details")
                 .where("details.id=:id", { id: savedPost.id })
@@ -268,7 +268,7 @@ describe("one-to-one", function() {
                 .getSingleResult()
                 .should.be.rejectedWith(Error);*/ // not working, find fix
         });
-        
+
     });
 
     describe("cascade updates should not be executed when cascadeUpdate option is not set", function() {
@@ -391,7 +391,7 @@ describe("one-to-one", function() {
                         .where("post.id=:id")
                         .setParameter("id", newPost.id)
                         .getOne();
-                    
+
                 }).then(reloadedPost => {
                     reloadedPost!.image.url.should.be.equal("new-logo.png");
                 });
