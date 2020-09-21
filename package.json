@@ -86,11 +86,9 @@
     "debug": "^4.2.0",
     "dotenv": "^8.2.0",
     "glob": "^7.1.6",
-    "js-yaml": "^3.14.0",
     "mkdirp": "^1.0.4",
     "reflect-metadata": "^0.1.13",
     "sha.js": "^2.4.11",
-    "xml2js": "^0.4.23",
     "yargs": "^16.0.3"
   },
   "lint-staged": {

@@ -1,9 +1,8 @@
+import fs from "fs";
 import appRootPath from "app-root-path";
 import {ConnectionOptions} from "./ConnectionOptions";
 import {PlatformTools} from "../platform/PlatformTools";
 import {ConnectionOptionsEnvReader} from "./options-reader/ConnectionOptionsEnvReader";
-import {ConnectionOptionsYmlReader} from "./options-reader/ConnectionOptionsYmlReader";
-import {ConnectionOptionsXmlReader} from "./options-reader/ConnectionOptionsXmlReader";
 
 /**
  * Reads connection options from the ormconfig.
@@ -81,7 +80,7 @@ export class ConnectionOptionsReader {
     protected async load(): Promise<ConnectionOptions[]|undefined> {
         let connectionOptions: ConnectionOptions|ConnectionOptions[]|undefined = undefined;
 
-        const fileFormats = ["env", "js", "cjs", "ts", "json", "yml", "yaml", "xml"];
+        const fileFormats = ["env", "json"];
 
         // Detect if baseFilePath contains file extension
         const possibleExtension = this.baseFilePath.substr(this.baseFilePath.lastIndexOf("."));
@@ -106,23 +105,9 @@ export class ConnectionOptionsReader {
         if (PlatformTools.getEnvVariable("TYPEORM_CONNECTION") || PlatformTools.getEnvVariable("TYPEORM_URL")) {
             connectionOptions = new ConnectionOptionsEnvReader().read();
 
-        } else if (foundFileFormat === "js" || foundFileFormat === "cjs") {
-            connectionOptions = await require(configFile);
-
-        } else if (foundFileFormat === "ts") {
-            connectionOptions = await require(configFile);
-
         } else if (foundFileFormat === "json") {
-            connectionOptions = require(configFile);
+            connectionOptions = JSON.parse(fs.readFileSync(configFile).toString());
 
-        } else if (foundFileFormat === "yml") {
-            connectionOptions = new ConnectionOptionsYmlReader().read(configFile);
-
-        } else if (foundFileFormat === "yaml") {
-            connectionOptions = new ConnectionOptionsYmlReader().read(configFile);
-
-        } else if (foundFileFormat === "xml") {
-            connectionOptions = await new ConnectionOptionsXmlReader().read(configFile);
         }
 
         // normalize and return connection options
