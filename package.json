@@ -12,10 +12,7 @@
   "main": "./index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/typeorm/typeorm.git"
-  },
-  "bugs": {
-    "url": "https://github.com/typeorm/typeorm/issues"
+    "url": "https://github.com/bustle/typeorm"
   },
   "tags": [
     "orm",
