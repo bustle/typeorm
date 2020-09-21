@@ -1,7 +1,7 @@
 {
   "name": "@bustle/typeorm-postgres",
   "private": true,
-  "version": "0.2.26",
+  "version": "0.2.27-rc.1",
   "description": "Fork of typeorm, a Data-Mapper ORM for TypeScript. Only supports PostgreSQL.",
   "license": "MIT",
   "readmeFilename": "README.md",
