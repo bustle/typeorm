@@ -1,7 +1,6 @@
 import {Repository} from "./Repository";
 import {SelectQueryBuilder} from "../query-builder/SelectQueryBuilder";
 import {ObjectLiteral} from "../common/ObjectLiteral";
-import {AbstractSqliteDriver} from "../driver/sqlite-abstract/AbstractSqliteDriver";
 
 /**
  * Repository with additional functions to work with trees.
@@ -126,11 +125,7 @@ export class TreeRepository<Entity> extends Repository<Entity> {
                         .whereInIds(this.metadata.getEntityIdMap(entity));
 
                     qb.setNativeParameters(subQuery.expressionMap.nativeParameters);
-                    if (this.manager.connection.driver instanceof AbstractSqliteDriver) {
-                        return `${alias}.${this.metadata.materializedPathColumn!.propertyPath} LIKE ${subQuery.getQuery()} || '%'`;
-                    } else {
-                        return `${alias}.${this.metadata.materializedPathColumn!.propertyPath} LIKE CONCAT(${subQuery.getQuery()}, '%')`;
-                    }
+                    return `${alias}.${this.metadata.materializedPathColumn!.propertyPath} LIKE CONCAT(${subQuery.getQuery()}, '%')`;
                 });
         }
 
@@ -223,12 +218,7 @@ export class TreeRepository<Entity> extends Repository<Entity> {
                         .whereInIds(this.metadata.getEntityIdMap(entity));
 
                     qb.setNativeParameters(subQuery.expressionMap.nativeParameters);
-                    if (this.manager.connection.driver instanceof AbstractSqliteDriver) {
-                        return `${subQuery.getQuery()} LIKE ${alias}.${this.metadata.materializedPathColumn!.propertyPath} || '%'`;
-
-                    } else {
-                        return `${subQuery.getQuery()} LIKE CONCAT(${alias}.${this.metadata.materializedPathColumn!.propertyPath}, '%')`;
-                    }
+                    return `${subQuery.getQuery()} LIKE CONCAT(${alias}.${this.metadata.materializedPathColumn!.propertyPath}, '%')`;
                 });
         }
 

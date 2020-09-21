@@ -1,4 +1,3 @@
-import {MysqlDriver} from "../driver/mysql/MysqlDriver";
 import {ColumnMetadata} from "../metadata/ColumnMetadata";
 import {Connection} from "../connection/Connection";
 import {EntityMetadata} from "../metadata/EntityMetadata";
@@ -6,7 +5,6 @@ import {ForeignKeyMetadata} from "../metadata/ForeignKeyMetadata";
 import {IndexMetadata} from "../metadata/IndexMetadata";
 import {JoinTableMetadataArgs} from "../metadata-args/JoinTableMetadataArgs";
 import {RelationMetadata} from "../metadata/RelationMetadata";
-import {AuroraDataApiDriver} from "../driver/aurora-data-api/AuroraDataApiDriver";
 
 /**
  * Creates EntityMetadata for junction tables.
@@ -70,11 +68,7 @@ export class JunctionEntityMetadataBuilder {
                     propertyName: columnName,
                     options: {
                         name: columnName,
-                        length: !referencedColumn.length
-                        && (this.connection.driver instanceof MysqlDriver || this.connection.driver instanceof AuroraDataApiDriver)
-                        && (referencedColumn.generationStrategy === "uuid" || referencedColumn.type === "uuid")
-                            ? "36"
-                            : referencedColumn.length, // fix https://github.com/typeorm/typeorm/issues/3604
+                        length: referencedColumn.length, // fix https://github.com/typeorm/typeorm/issues/3604
                         width: referencedColumn.width,
                         type: referencedColumn.type,
                         precision: referencedColumn.precision,
@@ -108,11 +102,7 @@ export class JunctionEntityMetadataBuilder {
                     mode: "virtual",
                     propertyName: columnName,
                     options: {
-                        length: !inverseReferencedColumn.length
-                        && (this.connection.driver instanceof MysqlDriver || this.connection.driver instanceof AuroraDataApiDriver)
-                        && (inverseReferencedColumn.generationStrategy === "uuid" || inverseReferencedColumn.type === "uuid")
-                            ? "36"
-                            : inverseReferencedColumn.length, // fix https://github.com/typeorm/typeorm/issues/3604
+                        length: inverseReferencedColumn.length, // fix https://github.com/typeorm/typeorm/issues/3604
                         width: inverseReferencedColumn.width, // fix https://github.com/typeorm/typeorm/issues/6442
                         type: inverseReferencedColumn.type,
                         precision: inverseReferencedColumn.precision,

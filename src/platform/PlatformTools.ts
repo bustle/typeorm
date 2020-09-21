@@ -2,7 +2,6 @@ import * as path from "path";
 import * as fs from "fs";
 import dotenv from "dotenv";
 import chalk from "chalk";
-import {highlight, Theme} from "cli-highlight";
 
 export {ReadStream} from "fs";
 export {EventEmitter} from "events";
@@ -16,7 +15,7 @@ export class PlatformTools {
     /**
      * Type of the currently running platform.
      */
-    static type: "browser"|"node" = "node";
+    static type: "node" = "node";
 
     /**
      * Gets global variable where global stuff can be stored.
@@ -40,90 +39,11 @@ export class PlatformTools {
             // switch case to explicit require statements for webpack compatibility.
 
             switch (name) {
-
-                /**
-                * mongodb
-                */
-                case "mongodb":
-                    return require("mongodb");
-
-                /**
-                * hana
-                */
-                case "@sap/hana-client":
-                    return require("@sap/hana-client");
-
-                case "hdb-pool":
-                    return require("hdb-pool");
-
-                /**
-                * mysql
-                */
-                case "mysql":
-                    return require("mysql");
-
-                case "mysql2":
-                    return require("mysql2");
-
-                /**
-                * oracle
-                */
-                case "oracledb":
-                    return require("oracledb");
-
                 /**
                 * postgres
                 */
                 case "pg":
                     return require("pg");
-
-                case "pg-native":
-                    return require("pg-native");
-
-                case "pg-query-stream":
-                    return require("pg-query-stream");
-
-                case "typeorm-aurora-data-api-driver":
-                    return require("typeorm-aurora-data-api-driver");
-
-                /**
-                * redis
-                */
-                case "redis":
-                    return require("redis");
-
-                case "ioredis":
-                    return require("ioredis");
-
-                /**
-                 * better-sqlite3
-                 */
-                case "better-sqlite3":
-                    return require("better-sqlite3");
-
-                /**
-                * sqlite
-                */
-                case "sqlite3":
-                    return require("sqlite3");
-
-                /**
-                * sql.js
-                */
-                case "sql.js":
-                    return require("sql.js");
-
-                /**
-                * sqlserver
-                */
-                case "mssql":
-                    return require("mssql");
-
-                /**
-                 * react-native-sqlite
-                 */
-                case "react-native-sqlite-storage":
-                    return require("react-native-sqlite-storage");
             }
 
         } catch (err) {
@@ -202,22 +122,14 @@ export class PlatformTools {
      * Highlights sql string to be print in the console.
      */
     static highlightSql(sql: string) {
-        const theme: Theme = {
-            "keyword": chalk.blueBright,
-            "literal": chalk.blueBright,
-            "string": chalk.white,
-            "type": chalk.magentaBright,
-            "built_in": chalk.magentaBright,
-            "comment": chalk.gray,
-        };
-        return highlight(sql, { theme: theme, language: "sql" });
+        return sql;
     }
 
     /**
      * Highlights json string to be print in the console.
      */
     static highlightJson(json: string) {
-        return highlight(json, { language: "json" });
+        return json;
     }
 
     /**

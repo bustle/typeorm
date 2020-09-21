@@ -3,9 +3,7 @@ import {expect} from "chai";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../../utils/test-utils";
 import {Connection} from "../../../../src/connection/Connection";
 import {User} from "./entity/User";
-import {MysqlDriver} from "../../../../src/driver/mysql/MysqlDriver";
 import {LimitOnUpdateNotSupportedError} from "../../../../src/error/LimitOnUpdateNotSupportedError";
-import {Not, IsNull} from "../../../../src";
 import {MissingDeleteDateColumnError} from "../../../../src/error/MissingDeleteDateColumnError";
 import {UserWithoutDeleteDateColumn} from "./entity/UserWithoutDeleteDateColumn";
 import {Photo} from "./entity/Photo";
@@ -83,7 +81,7 @@ describe("query builder > soft-delete", () => {
                 }
             })
             .execute();
-        
+
         const loadedPhoto1 = await connection.getRepository(Photo).findOne({ url: "1.jpg" });
         expect(loadedPhoto1).to.be.undefined;
 
@@ -138,28 +136,11 @@ describe("query builder > soft-delete", () => {
 
         const limitNum = 2;
 
-        if (connection.driver instanceof MysqlDriver) {
-            await connection.createQueryBuilder()
-            .softDelete()
-            .from(User)
-            .limit(limitNum)
-            .execute();
-
-            const loadedUsers = await connection.getRepository(User).find({
-                where: {
-                    deletedAt: Not(IsNull())
-                },
-                withDeleted: true
-            });
-            expect(loadedUsers).to.exist;
-            loadedUsers!.length.should.be.equal(limitNum);
-        } else {
-            await connection.createQueryBuilder()
-            .softDelete()
-            .from(User)
-            .limit(limitNum)
-            .execute().should.be.rejectedWith(LimitOnUpdateNotSupportedError);
-        }
+        await connection.createQueryBuilder()
+        .softDelete()
+        .from(User)
+        .limit(limitNum)
+        .execute().should.be.rejectedWith(LimitOnUpdateNotSupportedError);
 
     })));
 
@@ -177,28 +158,11 @@ describe("query builder > soft-delete", () => {
 
         const limitNum = 2;
 
-        if (connection.driver instanceof MysqlDriver) {
-            await connection.createQueryBuilder()
-            .softDelete()
-            .from(User)
-            .execute();
-
-            await connection.createQueryBuilder()
-            .restore()
-            .from(User)
-            .limit(limitNum)
-            .execute();
-
-            const loadedUsers = await connection.getRepository(User).find();
-            expect(loadedUsers).to.exist;
-            loadedUsers!.length.should.be.equal(limitNum);
-        } else {
-            await connection.createQueryBuilder()
-            .restore()
-            .from(User)
-            .limit(limitNum)
-            .execute().should.be.rejectedWith(LimitOnUpdateNotSupportedError);
-        }
+        await connection.createQueryBuilder()
+        .restore()
+        .from(User)
+        .limit(limitNum)
+        .execute().should.be.rejectedWith(LimitOnUpdateNotSupportedError);
 
     })));
 

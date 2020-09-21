@@ -14,9 +14,6 @@ import {Brackets} from "./Brackets";
 import {QueryDeepPartialEntity} from "./QueryPartialEntity";
 import {EntityMetadata} from "../metadata/EntityMetadata";
 import {ColumnMetadata} from "../metadata/ColumnMetadata";
-import {SqljsDriver} from "../driver/sqljs/SqljsDriver";
-import {SqlServerDriver} from "../driver/sqlserver/SqlServerDriver";
-import {OracleDriver} from "../driver/oracle/OracleDriver";
 import {EntitySchema} from "../";
 import {FindOperator} from "../find-options/FindOperator";
 import {In} from "../find-options/operator/In";
@@ -421,9 +418,6 @@ export abstract class QueryBuilder<Entity> {
             if (queryRunner !== this.queryRunner) { // means we created our own query runner
                 await queryRunner.release();
             }
-            if (this.connection.driver instanceof SqljsDriver) {
-                await this.connection.driver.autoSave();
-            }
         }
     }
 
@@ -653,30 +647,8 @@ export abstract class QueryBuilder<Entity> {
         if (columns.length) {
             let columnsExpression = columns.map(column => {
                 const name = this.escape(column.databaseName);
-                if (driver instanceof SqlServerDriver) {
-                    if (this.expressionMap.queryType === "insert" || this.expressionMap.queryType === "update" || this.expressionMap.queryType === "soft-delete" || this.expressionMap.queryType === "restore") {
-                        return "INSERTED." + name;
-                    } else {
-                        return this.escape(this.getMainTableName()) + "." + name;
-                    }
-                } else {
-                    return name;
-                }
+                return name;
             }).join(", ");
-
-            if (driver instanceof OracleDriver) {
-                columnsExpression += " INTO " + columns.map(column => {
-                    const parameterName = "output_" + column.databaseName;
-                    this.expressionMap.nativeParameters[parameterName] = { type: driver.columnTypeToNativeParameter(column.type), dir: driver.oracle.BIND_OUT };
-                    return this.connection.driver.createParameter(parameterName, Object.keys(this.expressionMap.nativeParameters).length);
-                }).join(", ");
-            }
-
-            if (driver instanceof SqlServerDriver) {
-                if (this.expressionMap.queryType === "insert" || this.expressionMap.queryType === "update") {
-                    columnsExpression += " INTO @OutputTable";
-                }
-            }
 
             return columnsExpression;
 

@@ -3,7 +3,6 @@ import {Connection} from "../../../src";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../utils/test-utils";
 import {Table} from "../../../src";
 import {TableCheck} from "../../../src/schema-builder/table/TableCheck";
-import {MysqlDriver} from "../../../src/driver/mysql/MysqlDriver";
 
 describe("query runner > create check constraint", () => {
 
@@ -19,11 +18,6 @@ describe("query runner > create check constraint", () => {
     after(() => closeTestingConnections(connections));
 
     it("should correctly create check constraint and revert creation", () => Promise.all(connections.map(async connection => {
-
-        // Mysql does not support check constraints.
-        if (connection.driver instanceof MysqlDriver)
-            return;
-
         const queryRunner = connection.createQueryRunner();
         await queryRunner.createTable(new Table({
             name: "question",

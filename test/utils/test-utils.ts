@@ -1,7 +1,6 @@
 import {Connection} from "../../src/connection/Connection";
 import {ConnectionOptions} from "../../src/connection/ConnectionOptions";
 import {PostgresDriver} from "../../src/driver/postgres/PostgresDriver";
-import {SqlServerDriver} from "../../src/driver/sqlserver/SqlServerDriver";
 import {DatabaseType} from "../../src/driver/types/DatabaseType";
 import {EntitySchema} from "../../src/entity-schema/EntitySchema";
 import {createConnections} from "../../src/index";
@@ -255,7 +254,7 @@ export async function createTestingConnections(options?: TestingOptions): Promis
         await PromiseUtils.runInSequence(databases, database => queryRunner.createDatabase(database, true));
 
         // create new schemas
-        if (connection.driver instanceof PostgresDriver || connection.driver instanceof SqlServerDriver) {
+        if (connection.driver instanceof PostgresDriver) {
             const schemaPaths: string[] = [];
             connection.entityMetadatas
                 .filter(entityMetadata => !!entityMetadata.schemaPath)

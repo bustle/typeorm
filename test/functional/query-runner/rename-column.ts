@@ -1,14 +1,9 @@
 import "reflect-metadata";
 import {expect} from "chai";
 import {Connection} from "../../../src";
-import {CockroachDriver} from "../../../src/driver/cockroachdb/CockroachDriver";
-import {SapDriver} from "../../../src/driver/sap/SapDriver";
 import {closeTestingConnections, createTestingConnections} from "../../utils/test-utils";
 import {Table} from "../../../src";
-import {SqlServerDriver} from "../../../src/driver/sqlserver/SqlServerDriver";
 import {PostgresDriver} from "../../../src/driver/postgres/PostgresDriver";
-import {AbstractSqliteDriver} from "../../../src/driver/sqlite-abstract/AbstractSqliteDriver";
-import {MysqlDriver} from "../../../src/driver/mysql/MysqlDriver";
 
 describe("query runner > rename column", () => {
 
@@ -23,11 +18,6 @@ describe("query runner > rename column", () => {
     after(() => closeTestingConnections(connections));
 
     it("should correctly rename column and revert rename", () => Promise.all(connections.map(async connection => {
-
-        // TODO: https://github.com/cockroachdb/cockroach/issues/32555
-        if (connection.driver instanceof CockroachDriver)
-            return;
-
         const queryRunner = connection.createQueryRunner();
 
         let table = await queryRunner.getTable("post");
@@ -57,43 +47,32 @@ describe("query runner > rename column", () => {
     })));
 
     it("should correctly rename column with all constraints and revert rename", () => Promise.all(connections.map(async connection => {
-
-        // TODO: https://github.com/cockroachdb/cockroach/issues/32555
-        if (connection.driver instanceof CockroachDriver)
-            return;
-
         const queryRunner = connection.createQueryRunner();
 
         let table = await queryRunner.getTable("post");
         const idColumn = table!.findColumnByName("id")!;
         await queryRunner.renameColumn(table!, idColumn, "id2");
 
-        // should successfully drop pk if pk constraint was correctly renamed.
-        // CockroachDB does not allow to drop PK
-        if (!(connection.driver instanceof CockroachDriver))
-            await queryRunner.dropPrimaryKey(table!);
+        await queryRunner.dropPrimaryKey(table!);
 
         table = await queryRunner.getTable("post");
         expect(table!.findColumnByName("id")).to.be.undefined;
         table!.findColumnByName("id2")!.should.be.exist;
 
-        // MySql and SAP does not support unique constraints
-        if (!(connection.driver instanceof MysqlDriver) && !(connection.driver instanceof SapDriver)) {
-            const oldUniqueConstraintName = connection.namingStrategy.uniqueConstraintName(table!, ["text", "tag"]);
-            let tableUnique = table!.uniques.find(unique => {
-                return !!unique.columnNames.find(columnName => columnName === "tag");
-            });
-            tableUnique!.name!.should.be.equal(oldUniqueConstraintName);
+        const oldUniqueConstraintName = connection.namingStrategy.uniqueConstraintName(table!, ["text", "tag"]);
+        let tableUnique = table!.uniques.find(unique => {
+            return !!unique.columnNames.find(columnName => columnName === "tag");
+        });
+        tableUnique!.name!.should.be.equal(oldUniqueConstraintName);
 
-            await queryRunner.renameColumn(table!, "text", "text2");
+        await queryRunner.renameColumn(table!, "text", "text2");
 
-            table = await queryRunner.getTable("post");
-            const newUniqueConstraintName = connection.namingStrategy.uniqueConstraintName(table!, ["text2", "tag"]);
-            tableUnique = table!.uniques.find(unique => {
-                return !!unique.columnNames.find(columnName => columnName === "tag");
-            });
-            tableUnique!.name!.should.be.equal(newUniqueConstraintName);
-        }
+        table = await queryRunner.getTable("post");
+        const newUniqueConstraintName = connection.namingStrategy.uniqueConstraintName(table!, ["text2", "tag"]);
+        tableUnique = table!.uniques.find(unique => {
+            return !!unique.columnNames.find(columnName => columnName === "tag");
+        });
+        tableUnique!.name!.should.be.equal(newUniqueConstraintName);
 
         await queryRunner.executeMemoryDownSql();
 
@@ -105,33 +84,17 @@ describe("query runner > rename column", () => {
     })));
 
     it("should correctly rename column with all constraints in custom table schema and database and revert rename", () => Promise.all(connections.map(async connection => {
-
-        // TODO: https://github.com/cockroachdb/cockroach/issues/32555
-        if (connection.driver instanceof CockroachDriver)
-            return;
-
         const queryRunner = connection.createQueryRunner();
         let table: Table|undefined;
 
         let questionTableName: string = "question";
         let categoryTableName: string = "category";
 
-        // create different names to test renaming with custom schema and database.
-        if (connection.driver instanceof SqlServerDriver) {
-            questionTableName = "testDB.testSchema.question";
-            categoryTableName = "testDB.testSchema.category";
-            await queryRunner.createDatabase("testDB", true);
-            await queryRunner.createSchema("testDB.testSchema", true);
-
-        } else if (connection.driver instanceof PostgresDriver) {
+        if (connection.driver instanceof PostgresDriver) {
             questionTableName = "testSchema.question";
             categoryTableName = "testSchema.category";
             await queryRunner.createSchema("testSchema", true);
 
-        } else if (connection.driver instanceof MysqlDriver) {
-            questionTableName = "testDB.question";
-            categoryTableName = "testDB.category";
-            await queryRunner.createDatabase("testDB", true);
         }
 
         await queryRunner.createTable(new Table({
@@ -139,7 +102,7 @@ describe("query runner > rename column", () => {
             columns: [
                 {
                     name: "id",
-                    type: connection.driver instanceof AbstractSqliteDriver ? "integer" : "int",
+                    type: "int",
                     isPrimary: true,
                     isGenerated: true,
                     generationStrategy: "increment"
@@ -157,7 +120,7 @@ describe("query runner > rename column", () => {
             columns: [
                 {
                     name: "id",
-                    type: connection.driver instanceof AbstractSqliteDriver ? "integer" : "int",
+                    type: "int",
                     isPrimary: true,
                     isGenerated: true,
                     generationStrategy: "increment"

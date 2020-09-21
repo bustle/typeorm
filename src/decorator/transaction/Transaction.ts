@@ -1,4 +1,4 @@
-import {getConnection, getMetadataArgsStorage, MongoRepository, Repository, TreeRepository, EntityManager} from "../../";
+import {getConnection, getMetadataArgsStorage, Repository, TreeRepository, EntityManager} from "../../";
 import {TransactionOptions} from "../options/TransactionOptions";
 import {IsolationLevel} from "../../driver/types/IsolationLevel";
 
@@ -74,9 +74,6 @@ export function Transaction(connectionOrOptions?: string | TransactionOptions): 
                     switch (metadata.repositoryType) {
                         case Repository:
                             repositoryInstance = entityManager.getRepository(metadata.entityType!);
-                            break;
-                        case MongoRepository:
-                            repositoryInstance = entityManager.getMongoRepository(metadata.entityType!);
                             break;
                         case TreeRepository:
                             repositoryInstance = entityManager.getTreeRepository(metadata.entityType!);

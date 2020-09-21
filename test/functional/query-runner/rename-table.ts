@@ -1,13 +1,8 @@
 import "reflect-metadata";
 import {Connection} from "../../../src/connection/Connection";
-import {CockroachDriver} from "../../../src/driver/cockroachdb/CockroachDriver";
-import {SapDriver} from "../../../src/driver/sap/SapDriver";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../utils/test-utils";
-import {SqlServerDriver} from "../../../src/driver/sqlserver/SqlServerDriver";
 import {Table} from "../../../src/schema-builder/table/Table";
-import {AbstractSqliteDriver} from "../../../src/driver/sqlite-abstract/AbstractSqliteDriver";
 import {PostgresDriver} from "../../../src/driver/postgres/PostgresDriver";
-import {MysqlDriver} from "../../../src/driver/mysql/MysqlDriver";
 
 describe("query runner > rename table", () => {
 
@@ -23,11 +18,6 @@ describe("query runner > rename table", () => {
     after(() => closeTestingConnections(connections));
 
     it("should correctly rename table and revert rename", () => Promise.all(connections.map(async connection => {
-
-        // CockroachDB does not support renaming constraints and removing PK.
-        if (connection.driver instanceof CockroachDriver)
-            return;
-
         const queryRunner = connection.createQueryRunner();
 
         let table = await queryRunner.getTable("post");
@@ -49,11 +39,6 @@ describe("query runner > rename table", () => {
     })));
 
     it("should correctly rename table with all constraints depend to that table and revert rename", () => Promise.all(connections.map(async connection => {
-
-        // CockroachDB does not support renaming constraints and removing PK.
-        if (connection.driver instanceof CockroachDriver)
-            return;
-
         const queryRunner = connection.createQueryRunner();
 
         let table = await queryRunner.getTable("post");
@@ -65,14 +50,11 @@ describe("query runner > rename table", () => {
         // should successfully drop pk if pk constraint was correctly renamed.
         await queryRunner.dropPrimaryKey(table!);
 
-        // MySql does not support unique constraints
-        if (!(connection.driver instanceof MysqlDriver) && !(connection.driver instanceof SapDriver)) {
-            const newUniqueConstraintName = connection.namingStrategy.uniqueConstraintName(table!, ["text", "tag"]);
-            let tableUnique = table!.uniques.find(unique => {
-                return !!unique.columnNames.find(columnName => columnName === "tag");
-            });
-            tableUnique!.name!.should.be.equal(newUniqueConstraintName);
-        }
+        const newUniqueConstraintName = connection.namingStrategy.uniqueConstraintName(table!, ["text", "tag"]);
+        let tableUnique = table!.uniques.find(unique => {
+            return !!unique.columnNames.find(columnName => columnName === "tag");
+        });
+        tableUnique!.name!.should.be.equal(newUniqueConstraintName);
 
         await queryRunner.executeMemoryDownSql();
 
@@ -83,11 +65,6 @@ describe("query runner > rename table", () => {
     })));
 
     it("should correctly rename table with custom schema and database and all its dependencies and revert rename", () => Promise.all(connections.map(async connection => {
-
-        // CockroachDB does not support renaming constraints and removing PK.
-        if (connection.driver instanceof CockroachDriver)
-            return;
-
         const queryRunner = connection.createQueryRunner();
         let table: Table|undefined;
 
@@ -96,28 +73,13 @@ describe("query runner > rename table", () => {
         let categoryTableName: string = "category";
         let renamedCategoryTableName: string = "renamedCategory";
 
-        // create different names to test renaming with custom schema and database.
-        if (connection.driver instanceof SqlServerDriver) {
-            questionTableName = "testDB.testSchema.question";
-            renamedQuestionTableName = "testDB.testSchema.renamedQuestion";
-            categoryTableName = "testDB.testSchema.category";
-            renamedCategoryTableName = "testDB.testSchema.renamedCategory";
-            await queryRunner.createDatabase("testDB", true);
-            await queryRunner.createSchema("testDB.testSchema", true);
-
-        } else if (connection.driver instanceof PostgresDriver || connection.driver instanceof SapDriver) {
+        if (connection.driver instanceof PostgresDriver) {
             questionTableName = "testSchema.question";
             renamedQuestionTableName = "testSchema.renamedQuestion";
             categoryTableName = "testSchema.category";
             renamedCategoryTableName = "testSchema.renamedCategory";
             await queryRunner.createSchema("testSchema", true);
 
-        } else if (connection.driver instanceof MysqlDriver) {
-            questionTableName = "testDB.question";
-            renamedQuestionTableName = "testDB.renamedQuestion";
-            categoryTableName = "testDB.category";
-            renamedCategoryTableName = "testDB.renamedCategory";
-            await queryRunner.createDatabase("testDB", true);
         }
 
         await queryRunner.createTable(new Table({
@@ -125,7 +87,7 @@ describe("query runner > rename table", () => {
             columns: [
                 {
                     name: "id",
-                    type: connection.driver instanceof AbstractSqliteDriver ? "integer" : "int",
+                    type: "int",
                     isPrimary: true,
                     isGenerated: true,
                     generationStrategy: "increment"
@@ -143,7 +105,7 @@ describe("query runner > rename table", () => {
             columns: [
                 {
                     name: "id",
-                    type: connection.driver instanceof AbstractSqliteDriver ? "integer" : "int",
+                    type: "int",
                     isPrimary: true,
                     isGenerated: true,
                     generationStrategy: "increment"

@@ -1,5 +1,4 @@
 import "reflect-metadata";
-import {SapDriver} from "../../../../src/driver/sap/SapDriver";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../../utils/test-utils";
 import {Connection} from "../../../../src/connection/Connection";
 import {Post} from "./entity/Post";
@@ -11,16 +10,12 @@ describe("transaction > transaction with full isolation support", () => {
   let connections: Connection[];
   before(async () => connections = await createTestingConnections({
       entities: [__dirname + "/entity/*{.js,.ts}"],
-      enabledDrivers: ["mysql", "mssql", "postgres", "sap"] // todo: for some reasons mariadb tests are not passing here
+      enabledDrivers: ["postgres"] // todo: for some reasons mariadb tests are not passing here
   }));
   beforeEach(() => reloadTestingDatabases(connections));
   after(() => closeTestingConnections(connections));
 
   it("should execute all operations in a single transaction with READ UNCOMMITTED isolation level", () => Promise.all(connections.map(async connection => {
-      // SAP does not support READ UNCOMMITTED isolation level
-      if (connection.driver instanceof SapDriver)
-          return;
-
       let postId: number|undefined = undefined, categoryId: number|undefined = undefined;
 
       await connection.manager.transaction("READ UNCOMMITTED", async entityManager => {

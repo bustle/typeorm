@@ -15,9 +15,6 @@ import {EntityMetadataNotFoundError} from "../error/EntityMetadataNotFoundError"
 import {MigrationInterface} from "../migration/MigrationInterface";
 import {MigrationExecutor} from "../migration/MigrationExecutor";
 import {Migration} from "../migration/Migration";
-import {MongoRepository} from "../repository/MongoRepository";
-import {MongoDriver} from "../driver/mongodb/MongoDriver";
-import {MongoEntityManager} from "../entity-manager/MongoEntityManager";
 import {EntityMetadataValidator} from "../metadata-builder/EntityMetadataValidator";
 import {ConnectionOptions} from "./ConnectionOptions";
 import {QueryRunnerProviderAlreadyReleasedError} from "../error/QueryRunnerProviderAlreadyReleasedError";
@@ -29,16 +26,11 @@ import {SelectQueryBuilder} from "../query-builder/SelectQueryBuilder";
 import {LoggerFactory} from "../logger/LoggerFactory";
 import {QueryResultCacheFactory} from "../cache/QueryResultCacheFactory";
 import {QueryResultCache} from "../cache/QueryResultCache";
-import {SqljsEntityManager} from "../entity-manager/SqljsEntityManager";
 import {RelationLoader} from "../query-builder/RelationLoader";
 import {RelationIdLoader} from "../query-builder/RelationIdLoader";
 import {EntitySchema} from "../";
-import {SqlServerDriver} from "../driver/sqlserver/SqlServerDriver";
-import {MysqlDriver} from "../driver/mysql/MysqlDriver";
 import {ObjectUtils} from "../util/ObjectUtils";
-import {PromiseUtils} from "../";
 import {IsolationLevel} from "../driver/types/IsolationLevel";
-import {AuroraDataApiDriver} from "../driver/aurora-data-api/AuroraDataApiDriver";
 import {DriverUtils} from "../driver/DriverUtils";
 
 /**
@@ -138,31 +130,6 @@ export class Connection {
     // Public Accessors
     // -------------------------------------------------------------------------
 
-    /**
-     * Gets the mongodb entity manager that allows to perform mongodb-specific repository operations
-     * with any entity in this connection.
-     *
-     * Available only in mongodb connections.
-     */
-    get mongoManager(): MongoEntityManager {
-        if (!(this.manager instanceof MongoEntityManager))
-            throw new Error(`MongoEntityManager is only available for MongoDB databases.`);
-
-        return this.manager as MongoEntityManager;
-    }
-
-    /**
-     * Gets a sql.js specific Entity Manager that allows to perform special load and save operations
-     *
-     * Available only in connection with the sqljs driver.
-     */
-    get sqljsManager(): SqljsEntityManager {
-        if (!(this.manager instanceof SqljsEntityManager))
-            throw new Error(`SqljsEntityManager is only available for Sqljs databases.`);
-
-        return this.manager as SqljsEntityManager;
-    }
-
     // -------------------------------------------------------------------------
     // Public Methods
     // -------------------------------------------------------------------------
@@ -261,16 +228,7 @@ export class Connection {
     async dropDatabase(): Promise<void> {
         const queryRunner = this.createQueryRunner("master");
         try {
-            if (this.driver instanceof SqlServerDriver || this.driver instanceof MysqlDriver || this.driver instanceof AuroraDataApiDriver) {
-                const databases: string[] = this.driver.database ? [this.driver.database] : [];
-                this.entityMetadatas.forEach(metadata => {
-                    if (metadata.database && databases.indexOf(metadata.database) === -1)
-                        databases.push(metadata.database);
-                });
-                await PromiseUtils.runInSequence(databases, database => queryRunner.clearDatabase(database));
-            } else {
-                await queryRunner.clearDatabase();
-            }
+            await queryRunner.clearDatabase();
         } finally {
             await queryRunner.release();
         }
@@ -352,17 +310,6 @@ export class Connection {
     }
 
     /**
-     * Gets mongodb-specific repository for the given entity class or name.
-     * Works only if connection is mongodb-specific.
-     */
-    getMongoRepository<Entity>(target: EntityTarget<Entity>): MongoRepository<Entity> {
-        if (!(this.driver instanceof MongoDriver))
-            throw new Error(`You can use getMongoRepository only for MongoDB connections.`);
-
-        return this.manager.getRepository(target) as any;
-    }
-
-    /**
      * Gets custom entity repository marked with @EntityRepository decorator.
      */
     getCustomRepository<T>(customRepository: ObjectType<T>): T {
@@ -389,9 +336,6 @@ export class Connection {
      * Executes raw SQL query and returns raw database results.
      */
     async query(query: string, parameters?: any[], queryRunner?: QueryRunner): Promise<any> {
-        if (this instanceof MongoEntityManager)
-            throw new Error(`Queries aren't supported by MongoDB.`);
-
         if (queryRunner && queryRunner.isReleased)
             throw new QueryRunnerProviderAlreadyReleasedError();
 
@@ -420,9 +364,6 @@ export class Connection {
      * Creates a new query builder that can be used to build a sql query.
      */
     createQueryBuilder<Entity>(entityOrRunner?: EntityTarget<Entity>|QueryRunner, alias?: string, queryRunner?: QueryRunner): SelectQueryBuilder<Entity> {
-        if (this instanceof MongoEntityManager)
-            throw new Error(`Query Builder is not supported by MongoDB.`);
-
         if (alias) {
             const metadata = this.getMetadata(entityOrRunner as EntityTarget<Entity>);
             return new SelectQueryBuilder(this, queryRunner)
@@ -528,12 +469,7 @@ export class Connection {
     protected getDatabaseName(): string {
         const options = this.options;
         switch (options.type) {
-            case "mysql" :
-            case "mariadb" :
             case "postgres":
-            case "cockroachdb":
-            case "mssql":
-            case "oracle":
                 return DriverUtils.buildDriverOptions(options.replication ? options.replication.master : options).database;
             default:
                 return DriverUtils.buildDriverOptions(options).database;

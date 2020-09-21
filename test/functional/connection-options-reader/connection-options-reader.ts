@@ -17,26 +17,6 @@ describe("ConnectionOptionsReader", () => {
     expect(entities.length).to.equal(1);
   });
 
-  it("properly loads sqlite in-memory/path config", async () => {
-    const connectionOptionsReader = new ConnectionOptionsReader({ root: __dirname, configName: "configs/sqlite-memory" });
-    const inmemoryOptions: ConnectionOptions = await connectionOptionsReader.get("memory");
-    expect(inmemoryOptions.database).to.equal(":memory:");
-    const fileOptions: ConnectionOptions = await connectionOptionsReader.get("file");
-    expect(fileOptions.database).to.have.string("/test");
-  });
-
-  it("properly loads config with specified file path", async () => {
-    const connectionOptionsReader = new ConnectionOptionsReader({ root: __dirname, configName: "configs/test-path-config.js" });
-    const fileOptions: ConnectionOptions = await connectionOptionsReader.get("file");
-    expect(fileOptions.database).to.have.string("/test-js");
-  });
-
-  it("properly loads asynchronous config with specified file path", async () => {
-    const connectionOptionsReader = new ConnectionOptionsReader({ root: __dirname, configName: "configs/test-path-config-async.js" });
-    const fileOptions: ConnectionOptions = await connectionOptionsReader.get("file");
-    expect(fileOptions.database).to.have.string("/test-js-async");
-  });
-
   // TODO This test requires the configs/.env file be moved to the matching directory in build/compiled
   it.skip("properly loads config from .env file", async () => {
     const connectionOptionsReader = new ConnectionOptionsReader({ root: __dirname, configName: "configs/.env" });

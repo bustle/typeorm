@@ -1,9 +1,6 @@
 import "reflect-metadata";
 import {Connection} from "../../../src";
-import {MysqlDriver} from "../../../src/driver/mysql/MysqlDriver";
 import {PostgresDriver} from "../../../src/driver/postgres/PostgresDriver";
-import {SapDriver} from "../../../src/driver/sap/SapDriver";
-import {SqlServerDriver} from "../../../src/driver/sqlserver/SqlServerDriver";
 import {ForeignKeyMetadata} from "../../../src/metadata/ForeignKeyMetadata";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../utils/test-utils";
 
@@ -13,7 +10,7 @@ describe("schema builder > custom-db-and-schema-sync", () => {
     before(async () => {
         connections = await createTestingConnections({
             entities: [__dirname + "/entity/*{.js,.ts}"],
-            enabledDrivers: ["mysql", "mssql", "postgres", "sap"],
+            enabledDrivers: ["postgres"],
             dropSchema: true,
         });
     });
@@ -29,22 +26,7 @@ describe("schema builder > custom-db-and-schema-sync", () => {
         photoMetadata.synchronize = true;
         albumMetadata.synchronize = true;
 
-        if (connection.driver instanceof SqlServerDriver) {
-            photoMetadata.database = "secondDB";
-            photoMetadata.schema = "photo-schema";
-            photoMetadata.tablePath = "secondDB.photo-schema.photo";
-            photoMetadata.schemaPath = "secondDB.photo-schema";
-
-            albumMetadata.database = "secondDB";
-            albumMetadata.schema = "album-schema";
-            albumMetadata.tablePath = "secondDB.album-schema.album";
-            albumMetadata.schemaPath = "secondDB.album-schema";
-
-            await queryRunner.createDatabase(photoMetadata.database, true);
-            await queryRunner.createSchema(photoMetadata.schemaPath, true);
-            await queryRunner.createSchema(albumMetadata.schemaPath, true);
-
-        } else if (connection.driver instanceof PostgresDriver || connection.driver instanceof SapDriver) {
+        if (connection.driver instanceof PostgresDriver) {
             photoMetadata.schema = "photo-schema";
             photoMetadata.tablePath = "photo-schema.photo";
             photoMetadata.schemaPath = "photo-schema";
@@ -55,14 +37,6 @@ describe("schema builder > custom-db-and-schema-sync", () => {
             await queryRunner.createSchema(photoMetadata.schemaPath, true);
             await queryRunner.createSchema(albumMetadata.schemaPath, true);
 
-        } else if (connection.driver instanceof MysqlDriver) {
-            photoMetadata.database = "secondDB";
-            photoMetadata.tablePath = "secondDB.photo";
-
-            albumMetadata.database = "secondDB";
-            albumMetadata.tablePath = "secondDB.album";
-
-            await queryRunner.createDatabase(photoMetadata.database, true);
         }
 
         await connection.synchronize();

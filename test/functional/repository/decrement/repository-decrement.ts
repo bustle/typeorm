@@ -146,7 +146,7 @@ describe("repository > decrement method", () => {
         let connections: Connection[];
         before(async () => connections = await createTestingConnections({
             entities: [PostBigInt],
-            enabledDrivers: ["mysql", "mariadb", "postgres"],
+            enabledDrivers: ["postgres"],
             // logging: true
         }));
         beforeEach(() => reloadTestingDatabases(connections));

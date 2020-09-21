@@ -15,7 +15,6 @@ import {getConnectionManager} from "../../../src/index";
 import {NoConnectionForRepositoryError} from "../../../src/error/NoConnectionForRepositoryError";
 import {EntityManager} from "../../../src/entity-manager/EntityManager";
 import {CannotGetEntityManagerNotConnectedError} from "../../../src/error/CannotGetEntityManagerNotConnectedError";
-import {ConnectionOptions} from "../../../src/connection/ConnectionOptions";
 import {PostgresConnectionOptions} from "../../../src/driver/postgres/PostgresConnectionOptions";
 import {PromiseUtils} from "../../../src/util/PromiseUtils";
 
@@ -26,7 +25,7 @@ describe("Connection", () => {
 
         let connection: Connection;
         before(async () => {
-            const options = setupSingleTestingConnection("mysql", {
+            const options = setupSingleTestingConnection("postgres", {
                 name: "default",
                 entities: []
             });
@@ -96,23 +95,6 @@ describe("Connection", () => {
             return connection.connect().should.be.fulfilled;
         });
 
-    });
-
-    describe.skip("establishing connection", function() {
-        it("should throw DriverOptionNotSetError when extra.socketPath and host is missing", function() {
-            expect(() => {
-                getConnectionManager().create(<ConnectionOptions>{
-                    type: "mysql",
-                    username: "test",
-                    password: "test",
-                    database: "test",
-                    entities: [],
-                    dropSchema: false,
-                    schemaCreate: false,
-                    enabledDrivers: ["mysql"],
-                });
-            }).to.throw(Error);
-        });
     });
 
     describe("after connection is established successfully", function() {

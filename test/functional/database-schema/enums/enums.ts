@@ -9,7 +9,7 @@ describe("database schema > enums", () => {
     before(async () => {
         connections = await createTestingConnections({
             entities: [__dirname + "/entity/*{.js,.ts}"],
-            enabledDrivers: ["postgres", "mysql"]
+            enabledDrivers: ["postgres"]
         });
     });
     beforeEach(() => reloadTestingDatabases(connections));

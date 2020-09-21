@@ -3,7 +3,6 @@ import { closeTestingConnections, createTestingConnections, reloadTestingDatabas
 import { Connection } from "../../../src/connection/Connection";
 import { User } from "./entity/User";
 import { expect } from "chai";
-import { OracleDriver } from "../../../src/driver/oracle/OracleDriver";
 
 describe("github issues > #4452 InsertQueryBuilder fails on some SQL Expressions values", () => {
     let connections: Connection[];
@@ -24,7 +23,7 @@ describe("github issues > #4452 InsertQueryBuilder fails on some SQL Expressions
           .into(User)
           .values({
               name: "Ben Dover",
-              created_at: connection.driver instanceof OracleDriver ? () => "SYSDATE" : () => "current_timestamp"
+              created_at: () => "current_timestamp"
           })
           .execute();
 

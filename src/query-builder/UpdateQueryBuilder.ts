@@ -1,11 +1,8 @@
-import {CockroachDriver} from "../driver/cockroachdb/CockroachDriver";
-import {SapDriver} from "../driver/sap/SapDriver";
 import { ColumnMetadata } from "../metadata/ColumnMetadata";
 import {QueryBuilder} from "./QueryBuilder";
 import {ObjectLiteral} from "../common/ObjectLiteral";
 import {Connection} from "../connection/Connection";
 import {QueryRunner} from "../query-runner/QueryRunner";
-import {SqlServerDriver} from "../driver/sqlserver/SqlServerDriver";
 import {PostgresDriver} from "../driver/postgres/PostgresDriver";
 import {WhereExpression} from "./WhereExpression";
 import {Brackets} from "./Brackets";
@@ -13,18 +10,12 @@ import {EntityMetadata} from "../metadata/EntityMetadata";
 import {UpdateResult} from "./result/UpdateResult";
 import {ReturningStatementNotSupportedError} from "../error/ReturningStatementNotSupportedError";
 import {ReturningResultsEntityUpdator} from "./ReturningResultsEntityUpdator";
-import {SqljsDriver} from "../driver/sqljs/SqljsDriver";
-import {MysqlDriver} from "../driver/mysql/MysqlDriver";
 import {BroadcasterResult} from "../subscriber/BroadcasterResult";
-import {AbstractSqliteDriver} from "../driver/sqlite-abstract/AbstractSqliteDriver";
 import {OrderByCondition} from "../find-options/OrderByCondition";
 import {LimitOnUpdateNotSupportedError} from "../error/LimitOnUpdateNotSupportedError";
-import {OracleDriver} from "../driver/oracle/OracleDriver";
 import {UpdateValuesMissingError} from "../error/UpdateValuesMissingError";
 import {EntityColumnNotFound} from "../error/EntityColumnNotFound";
 import {QueryDeepPartialEntity} from "./QueryPartialEntity";
-import {AuroraDataApiDriver} from "../driver/aurora-data-api/AuroraDataApiDriver";
-import {BetterSqlite3Driver} from "../driver/better-sqlite3/BetterSqlite3Driver";
 
 /**
  * Allows to build complex sql queries in a fashion way and execute those queries.
@@ -85,11 +76,6 @@ export class UpdateQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
                 this.expressionMap.mainAlias!.hasMetadata &&
                 this.expressionMap.whereEntities.length > 0) {
                 this.expressionMap.extraReturningColumns = returningResultsEntityUpdator.getUpdationReturningColumns();
-
-                if (this.expressionMap.extraReturningColumns.length > 0 && this.connection.driver instanceof SqlServerDriver) {
-                    declareSql = this.connection.driver.buildTableVariableDeclaration("@OutputTable", this.expressionMap.extraReturningColumns);
-                    selectOutputSql = `SELECT * FROM @OutputTable`;
-                }
             }
 
             // execute update query
@@ -104,14 +90,6 @@ export class UpdateQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
             if (this.connection.driver instanceof PostgresDriver) {
                 updateResult.raw = result[0];
                 updateResult.affected = result[1];
-            }
-            else if (this.connection.driver instanceof MysqlDriver) {
-                updateResult.raw = result;
-                updateResult.affected = result.affectedRows;
-            }
-            else if (this.connection.driver instanceof BetterSqlite3Driver) { // only works for better-sqlite3
-                updateResult.raw = result;
-                updateResult.affected = result.changes;
             }
             else {
                 updateResult.raw = result;
@@ -150,9 +128,6 @@ export class UpdateQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
         } finally {
             if (queryRunner !== this.queryRunner) { // means we created our own query runner
                 await queryRunner.release();
-            }
-            if (this.connection.driver instanceof SqljsDriver && !queryRunner.isTransactionActive) {
-                await this.connection.driver.autoSave();
             }
         }
     }
@@ -392,13 +367,7 @@ export class UpdateQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
         // prepare columns and values to be updated
         const updateColumnAndValues: string[] = [];
         const updatedColumns: ColumnMetadata[] = [];
-        const newParameters: ObjectLiteral = {};
-        let parametersCount =   this.connection.driver instanceof MysqlDriver ||
-                                this.connection.driver instanceof AuroraDataApiDriver ||
-                                this.connection.driver instanceof OracleDriver ||
-                                this.connection.driver instanceof AbstractSqliteDriver ||
-                                this.connection.driver instanceof SapDriver
-            ? 0 : Object.keys(this.expressionMap.nativeParameters).length;
+        let parametersCount = Object.keys(this.expressionMap.nativeParameters).length;
         if (metadata) {
             EntityMetadata.createPropertyPath(metadata, valuesSet).forEach(propertyPath => {
                 // todo: make this and other query builder to work with properly with tables without metadata
@@ -426,43 +395,16 @@ export class UpdateQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
                     // todo: duplication zone
                     if (value instanceof Function) { // support for SQL expressions in update query
                         updateColumnAndValues.push(this.escape(column.databaseName) + " = " + value());
-                    } else if (this.connection.driver instanceof SapDriver && value === null) {
-                        updateColumnAndValues.push(this.escape(column.databaseName) + " = NULL");
                     } else {
-                        if (this.connection.driver instanceof SqlServerDriver) {
-                            value = this.connection.driver.parametrizeValue(column, value);
-
-                        // } else if (value instanceof Array) {
-                        //     value = new ArrayParameter(value);
-                        }
-
-                        if (this.connection.driver instanceof MysqlDriver ||
-                            this.connection.driver instanceof AuroraDataApiDriver ||
-                            this.connection.driver instanceof OracleDriver ||
-                            this.connection.driver instanceof AbstractSqliteDriver ||
-                            this.connection.driver instanceof SapDriver) {
-                            newParameters[paramName] = value;
-                        } else {
-                            this.expressionMap.nativeParameters[paramName] = value;
-                        }
+                        this.expressionMap.nativeParameters[paramName] = value;
 
                         let expression = null;
-                        if ((this.connection.driver instanceof MysqlDriver || this.connection.driver instanceof AuroraDataApiDriver) && this.connection.driver.spatialTypes.indexOf(column.type) !== -1) {
-                            const useLegacy = this.connection.driver.options.legacySpatialSupport;
-                            const geomFromText = useLegacy ? "GeomFromText" : "ST_GeomFromText";
-                            if (column.srid != null) {
-                                expression = `${geomFromText}(${this.connection.driver.createParameter(paramName, parametersCount)}, ${column.srid})`;
-                            } else {
-                                expression = `${geomFromText}(${this.connection.driver.createParameter(paramName, parametersCount)})`;
-                            }
-                        } else if (this.connection.driver instanceof PostgresDriver && this.connection.driver.spatialTypes.indexOf(column.type) !== -1) {
+                        if (this.connection.driver instanceof PostgresDriver && this.connection.driver.spatialTypes.indexOf(column.type) !== -1) {
                             if (column.srid != null) {
                               expression = `ST_SetSRID(ST_GeomFromGeoJSON(${this.connection.driver.createParameter(paramName, parametersCount)}), ${column.srid})::${column.type}`;
                             } else {
                               expression = `ST_GeomFromGeoJSON(${this.connection.driver.createParameter(paramName, parametersCount)})::${column.type}`;
                             }
-                        } else if (this.connection.driver instanceof SqlServerDriver && this.connection.driver.spatialTypes.indexOf(column.type) !== -1) {
-                            expression = column.type + "::STGeomFromText(" + this.connection.driver.createParameter(paramName, parametersCount) + ", " + (column.srid || "0") + ")";
                         } else {
                             expression = this.connection.driver.createParameter(paramName, parametersCount);
                         }
@@ -484,23 +426,13 @@ export class UpdateQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
                 // todo: duplication zone
                 if (value instanceof Function) { // support for SQL expressions in update query
                     updateColumnAndValues.push(this.escape(key) + " = " + value());
-                } else if (this.connection.driver instanceof SapDriver && value === null) {
-                    updateColumnAndValues.push(this.escape(key) + " = NULL");
                 } else {
 
                     // we need to store array values in a special class to make sure parameter replacement will work correctly
                     // if (value instanceof Array)
                     //     value = new ArrayParameter(value);
 
-                    if (this.connection.driver instanceof MysqlDriver ||
-                        this.connection.driver instanceof AuroraDataApiDriver ||
-                        this.connection.driver instanceof OracleDriver ||
-                        this.connection.driver instanceof AbstractSqliteDriver ||
-                        this.connection.driver instanceof SapDriver) {
-                        newParameters[key] = value;
-                    } else {
-                        this.expressionMap.nativeParameters[key] = value;
-                    }
+                    this.expressionMap.nativeParameters[key] = value;
 
                     updateColumnAndValues.push(this.escape(key) + " = " + this.connection.driver.createParameter(key, parametersCount));
                     parametersCount++;
@@ -512,27 +444,13 @@ export class UpdateQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
             throw new UpdateValuesMissingError();
         }
 
-        // we re-write parameters this way because we want our "UPDATE ... SET" parameters to be first in the list of "nativeParameters"
-        // because some drivers like mysql depend on order of parameters
-        if (this.connection.driver instanceof MysqlDriver ||
-            this.connection.driver instanceof AuroraDataApiDriver ||
-            this.connection.driver instanceof OracleDriver ||
-            this.connection.driver instanceof AbstractSqliteDriver ||
-            this.connection.driver instanceof SapDriver) {
-            this.expressionMap.nativeParameters = Object.assign(newParameters, this.expressionMap.nativeParameters);
-        }
-
         // get a table name and all column database names
         const whereExpression = this.createWhereExpression();
         const returningExpression = this.createReturningExpression();
 
         // generate and return sql update query
-        if (returningExpression && (this.connection.driver instanceof PostgresDriver || this.connection.driver instanceof OracleDriver || this.connection.driver instanceof CockroachDriver)) {
+        if (returningExpression && (this.connection.driver instanceof PostgresDriver)) {
             return `UPDATE ${this.getTableName(this.getMainTableName())} SET ${updateColumnAndValues.join(", ")}${whereExpression} RETURNING ${returningExpression}`;
-
-        } else if (returningExpression && this.connection.driver instanceof SqlServerDriver) {
-            return `UPDATE ${this.getTableName(this.getMainTableName())} SET ${updateColumnAndValues.join(", ")} OUTPUT ${returningExpression}${whereExpression}`;
-
         } else {
             return `UPDATE ${this.getTableName(this.getMainTableName())} SET ${updateColumnAndValues.join(", ")}${whereExpression}`; // todo: how do we replace aliases in where to nothing?
         }
@@ -564,11 +482,7 @@ export class UpdateQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
         let limit: number|undefined = this.expressionMap.limit;
 
         if (limit) {
-            if (this.connection.driver instanceof MysqlDriver || this.connection.driver instanceof AuroraDataApiDriver) {
-                return " LIMIT " + limit;
-            } else {
-                throw new LimitOnUpdateNotSupportedError();
-            }
+            throw new LimitOnUpdateNotSupportedError();
         }
 
         return "";

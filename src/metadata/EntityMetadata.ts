@@ -3,10 +3,6 @@ import {ObjectLiteral} from "../common/ObjectLiteral";
 import {Connection} from "../connection/Connection";
 import {PostgresConnectionOptions} from "../driver/postgres/PostgresConnectionOptions";
 import {PostgresDriver} from "../driver/postgres/PostgresDriver";
-import {SapDriver} from "../driver/sap/SapDriver";
-import {SqlServerConnectionOptions} from "../driver/sqlserver/SqlServerConnectionOptions";
-import {SqlServerDriver} from "../driver/sqlserver/SqlServerDriver";
-import {OracleDriver} from "../driver/oracle/OracleDriver";
 import {CannotCreateEntityIdMapError} from "../error/CannotCreateEntityIdMapError";
 import {OrderByCondition} from "../find-options/OrderByCondition";
 import {TableMetadataArgs} from "../metadata-args/TableMetadataArgs";
@@ -783,7 +779,7 @@ export class EntityMetadata {
             this.schema = this.parentEntityMetadata.schema;
         }
         else {
-            this.schema = (this.connection.options as PostgresConnectionOptions|SqlServerConnectionOptions).schema;
+            this.schema = (this.connection.options as PostgresConnectionOptions).schema;
         }
         this.givenTableName = this.tableMetadataArgs.type === "entity-child" && this.parentEntityMetadata ? this.parentEntityMetadata.givenTableName : this.tableMetadataArgs.name;
         this.synchronize = this.tableMetadataArgs.synchronize === false ? false : true;
@@ -849,16 +845,12 @@ export class EntityMetadata {
      */
     protected buildTablePath(): string {
         let tablePath = this.tableName;
-        if (this.schema && ((this.connection.driver instanceof OracleDriver) || (this.connection.driver instanceof PostgresDriver) || (this.connection.driver instanceof SqlServerDriver) || (this.connection.driver instanceof SapDriver))) {
+        if (this.schema && this.connection.driver instanceof PostgresDriver) {
             tablePath = this.schema + "." + tablePath;
         }
 
         if (this.database && !(this.connection.driver instanceof PostgresDriver)) {
-            if (!this.schema && this.connection.driver instanceof SqlServerDriver) {
-                tablePath = this.database + ".." + tablePath;
-            } else {
-                tablePath = this.database + "." + tablePath;
-            }
+            tablePath = this.database + "." + tablePath;
         }
 
         return tablePath;

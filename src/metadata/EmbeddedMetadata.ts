@@ -5,7 +5,6 @@ import {EmbeddedMetadataArgs} from "../metadata-args/EmbeddedMetadataArgs";
 import {RelationIdMetadata} from "./RelationIdMetadata";
 import {RelationCountMetadata} from "./RelationCountMetadata";
 import {Connection} from "../connection/Connection";
-import {MongoDriver} from "../driver/mongodb/MongoDriver";
 import {EntityListenerMetadata} from "./EntityListenerMetadata";
 import {IndexMetadata} from "./IndexMetadata";
 import {UniqueMetadata} from "./UniqueMetadata";
@@ -238,9 +237,6 @@ export class EmbeddedMetadata {
     }
 
     protected buildPrefix(connection: Connection): string {
-        if (connection.driver instanceof MongoDriver)
-            return this.propertyName;
-
         let prefixes: string[] = [];
         if (this.parentEmbeddedMetadata)
             prefixes.push(this.parentEmbeddedMetadata.buildPrefix(connection));

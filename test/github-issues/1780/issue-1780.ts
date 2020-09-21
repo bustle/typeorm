@@ -3,7 +3,6 @@ import {createTestingConnections, closeTestingConnections, reloadTestingDatabase
 import {Connection} from "../../../src/connection/Connection";
 import {expect} from "chai";
 import {User} from "./entity/User";
-import {MysqlDriver} from "../../../src/driver/mysql/MysqlDriver";
 import {PostgresDriver} from "../../../src/driver/postgres/PostgresDriver";
 describe("github issues > #1780 Support for insertion ignore on duplicate error", () => {
      let connections: Connection[];
@@ -25,58 +24,6 @@ describe("github issues > #1780 Support for insertion ignore on duplicate error"
      // let data = [user1, user2];
     // Bulk insertion with duplicated data through same query with duplicate error exception is not supported in PostgreSQL
     // https://doxygen.postgresql.org/nodeModifyTable_8c_source.html : Line 1356
-     it("should save one row without duplicate error in MySQL/MariaDB", () => Promise.all(connections.map(async connection => {
-      try {
-         if (connection.driver instanceof MysqlDriver) {
-             const UserRepository = connection.manager.getRepository(User);
-             // ignore while insertion duplicated row
-            await UserRepository
-                .createQueryBuilder()
-                .insert()
-                .orIgnore()
-                .into(User)
-                .values(user1)
-                .execute();
-             await UserRepository
-                .createQueryBuilder()
-                .insert()
-                .orIgnore()
-                .into(User)
-                .values(user2)
-                .execute();
-             let loadedUser_1 = await UserRepository.find();
-            expect(loadedUser_1).not.to.be.eql([]);
-            loadedUser_1.length.should.be.equal(1);
-             // remove all rows
-            await UserRepository.remove(loadedUser_1);
-             let loadedUser_2 = await UserRepository.find();
-            expect(loadedUser_2).to.be.eql([]);
-             // update while insertion duplicated row
-            await UserRepository
-                .createQueryBuilder()
-                .insert()
-                .orUpdate({ columns: [ "is_updated" ] })
-                .setParameter("is_updated", user1.is_updated)
-                .into(User)
-                .values(user1)
-                .execute();
-             await UserRepository
-                .createQueryBuilder()
-                .insert()
-                .orUpdate({ columns: [ "is_updated" ] })
-                .setParameter("is_updated", user2.is_updated)
-                .into(User)
-                .values(user2)
-                .execute();
-             let loadedUser_3 = await UserRepository.find();
-            expect(loadedUser_3).not.to.be.eql([]);
-            loadedUser_3.length.should.be.equal(1);
-            expect(loadedUser_3[0]).to.deep.include({ first_name: "John", last_name: "Lenon", is_updated: "yes" });
-        }
-       } catch (err) {
-           throw new Error(err);
-      }
-     })));
      it("should save one row without duplicate error in PostgreSQL", () => Promise.all(connections.map(async connection => {
          try {
             if (connection.driver instanceof PostgresDriver) {
