@@ -125,8 +125,8 @@ export class InitCommand implements yargs.CommandModule {
     protected static getTsConfigTemplate(): string {
         return JSON.stringify({
             compilerOptions: {
-                lib: ["es5", "es6"],
-                target: "es5",
+                lib: ["es2019"],
+                target: "es2019",
                 module: "commonjs",
                 moduleResolution: "node",
                 outDir: "./build",
