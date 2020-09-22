@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import {Connection} from "../../../src/connection/Connection";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../utils/test-utils";
-import {PromiseUtils} from "../../../src";
 import {IndexMetadata} from "../../../src/metadata/IndexMetadata";
 import {Teacher} from "./entity/Teacher";
 import {Student} from "./entity/Student";
@@ -21,7 +20,7 @@ describe("schema builder > change index", () => {
     beforeEach(() => reloadTestingDatabases(connections));
     after(() => closeTestingConnections(connections));
 
-    it("should correctly add new index", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly add new index", () => Promise.all(connections.map(async connection => {
         const teacherMetadata = connection.getMetadata(Teacher);
         const nameColumn = teacherMetadata.findColumnWithPropertyName("name")!;
         const indexMetadata = new IndexMetadata({
@@ -45,9 +44,9 @@ describe("schema builder > change index", () => {
 
         // revert changes
         teacherMetadata.indices.splice(teacherMetadata.indices.indexOf(indexMetadata), 1);
-    }));
+    })));
 
-    it("should correctly change index", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly change index", () => Promise.all(connections.map(async connection => {
         const studentMetadata = connection.getMetadata(Student);
         studentMetadata.indices[0].name = "changed_index";
 
@@ -59,9 +58,9 @@ describe("schema builder > change index", () => {
 
         const index = studentTable!.indices.find(i => i.name === "changed_index");
         expect(index).not.be.undefined;
-    }));
+    })));
 
-    it("should correctly drop removed index", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly drop removed index", () => Promise.all(connections.map(async connection => {
         const studentMetadata = connection.getMetadata(Student);
         studentMetadata.indices.splice(0, 1);
 
@@ -70,10 +69,12 @@ describe("schema builder > change index", () => {
         const queryRunner = connection.createQueryRunner();
         const studentTable = await queryRunner.getTable("student");
         await queryRunner.release();
-        studentTable!.indices.length.should.be.equal(0);
-    }));
+        {
+            studentTable!.indices.length.should.be.equal(0);
+        }
+    })));
 
-    it("should ignore index synchronization when `synchronize` set to false", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should ignore index synchronization when `synchronize` set to false", () => Promise.all(connections.map(async connection => {
 
         // You can not disable synchronization for unique index in CockroachDB, because unique indices are stored as UNIQUE constraints
 
@@ -96,6 +97,6 @@ describe("schema builder > change index", () => {
 
         await queryRunner.release();
 
-    }));
+    })));
 
 });

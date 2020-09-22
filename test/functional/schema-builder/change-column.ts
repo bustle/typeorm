@@ -1,6 +1,6 @@
 import {expect} from "chai";
 import "reflect-metadata";
-import {Connection, PromiseUtils} from "../../../src";
+import {Connection} from "../../../src";
 import {PostgresDriver} from "../../../src/driver/postgres/PostgresDriver";
 import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../utils/test-utils";
 import {Post} from "./entity/Post";
@@ -19,7 +19,7 @@ describe("schema builder > change column", () => {
     beforeEach(() => reloadTestingDatabases(connections));
     after(() => closeTestingConnections(connections));
 
-    it("should correctly change column name", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly change column name", () => Promise.all(connections.map(async connection => {
         const postMetadata = connection.getMetadata(Post);
         const nameColumn = postMetadata.findColumnWithPropertyName("name")!;
         nameColumn.propertyName = "title";
@@ -37,9 +37,9 @@ describe("schema builder > change column", () => {
         // revert changes
         nameColumn.propertyName = "name";
         nameColumn.build(connection);
-    }));
+    })));
 
-    it("should correctly change column length", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly change column length", () => Promise.all(connections.map(async connection => {
         const postMetadata = connection.getMetadata(Post);
         const nameColumn = postMetadata.findColumnWithPropertyName("name")!;
         const textColumn = postMetadata.findColumnWithPropertyName("text")!;
@@ -60,9 +60,9 @@ describe("schema builder > change column", () => {
         // revert changes
         nameColumn.length = "255";
         textColumn.length = "255";
-    }));
+    })));
 
-    it("should correctly change column type", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly change column type", () => Promise.all(connections.map(async connection => {
 
         const postMetadata = connection.getMetadata(Post);
         const versionColumn = postMetadata.findColumnWithPropertyName("version")!;
@@ -84,9 +84,9 @@ describe("schema builder > change column", () => {
         // revert changes
         versionColumn.type = "varchar";
         postVersionColumn.type = "varchar";
-    }));
+    })));
 
-    it("should correctly make column primary and generated", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly make column primary and generated", () => Promise.all(connections.map(async connection => {
         const postMetadata = connection.getMetadata(Post);
         const idColumn = postMetadata.findColumnWithPropertyName("id")!;
         const versionColumn = postMetadata.findColumnWithPropertyName("version")!;
@@ -110,9 +110,9 @@ describe("schema builder > change column", () => {
         idColumn.isGenerated = false;
         idColumn.generationStrategy = undefined;
         versionColumn.isPrimary = false;
-    }));
+    })));
 
-    it("should correctly change column `isGenerated` property when column is on foreign key", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly change column `isGenerated` property when column is on foreign key", () => Promise.all(connections.map(async connection => {
         const teacherMetadata = connection.getMetadata("teacher");
         const idColumn = teacherMetadata.findColumnWithPropertyName("id")!;
         idColumn.isGenerated = false;
@@ -131,9 +131,9 @@ describe("schema builder > change column", () => {
         idColumn.isGenerated = true;
         idColumn.generationStrategy = "increment";
 
-    }));
+    })));
 
-    it("should correctly change non-generated column on to uuid-generated column", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly change non-generated column on to uuid-generated column", () => Promise.all(connections.map(async connection => {
         const queryRunner = connection.createQueryRunner();
 
         if (connection.driver instanceof PostgresDriver)
@@ -171,9 +171,9 @@ describe("schema builder > change column", () => {
         postMetadata.generatedColumns.splice(postMetadata.generatedColumns.indexOf(idColumn), 1);
         postMetadata.hasUUIDGeneratedColumns = false;
 
-    }));
+    })));
 
-    it("should correctly change generated column generation strategy", () => PromiseUtils.runInSequence(connections, async connection => {
+    it("should correctly change generated column generation strategy", () => Promise.all(connections.map(async connection => {
         const teacherMetadata = connection.getMetadata("teacher");
         const studentMetadata = connection.getMetadata("student");
         const idColumn = teacherMetadata.findColumnWithPropertyName("id")!;
@@ -208,6 +208,6 @@ describe("schema builder > change column", () => {
         idColumn.type = "int";
         teacherColumn.type = "int";
 
-    }));
+    })));
 
 });

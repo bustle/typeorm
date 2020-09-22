@@ -12,7 +12,6 @@ import {EntityManager} from "./entity-manager/EntityManager";
 import {PlatformTools} from "./platform/PlatformTools";
 import {TreeRepository} from "./repository/TreeRepository";
 import {ConnectionOptionsReader} from "./connection/ConnectionOptionsReader";
-import {PromiseUtils} from "./util/PromiseUtils";
 import {SelectQueryBuilder} from "./query-builder/SelectQueryBuilder";
 import {EntityTarget} from "./common/EntityTarget";
 
@@ -115,6 +114,7 @@ export * from "./schema-builder/table/TableIndex";
 export * from "./schema-builder/table/TableUnique";
 export * from "./schema-builder/table/Table";
 export * from "./driver/types/DatabaseType";
+export * from "./driver/types/ReplicationMode";
 
 export {ConnectionOptionsReader} from "./connection/ConnectionOptionsReader";
 export {Connection} from "./connection/Connection";
@@ -150,7 +150,6 @@ export {EntitySchemaColumnOptions} from "./entity-schema/EntitySchemaColumnOptio
 export {EntitySchemaIndexOptions} from "./entity-schema/EntitySchemaIndexOptions";
 export {EntitySchemaRelationOptions} from "./entity-schema/EntitySchemaRelationOptions";
 export {ColumnType} from "./driver/types/ColumnTypes";
-export {PromiseUtils} from "./util/PromiseUtils";
 
 // -------------------------------------------------------------------------
 // Deprecated
@@ -233,7 +232,7 @@ export async function createConnections(options?: ConnectionOptions[]): Promise<
     if (!options)
         options = await new ConnectionOptionsReader().all();
     const connections = options.map(options => getConnectionManager().create(options));
-    return PromiseUtils.runInSequence(connections, connection => connection.connect());
+    return Promise.all(connections.map(connection => connection.connect()));
 }
 
 /**

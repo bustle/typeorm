@@ -121,7 +121,7 @@ export class EntityManager {
 
         // if query runner is already defined in this class, it means this entity manager was already created for a single connection
         // if its not defined we create a new query runner - single connection where we'll execute all our operations
-        const queryRunner = this.queryRunner || this.connection.createQueryRunner("master");
+        const queryRunner = this.queryRunner || this.connection.createQueryRunner();
 
         try {
             if (isolation) {
@@ -820,7 +820,7 @@ export class EntityManager {
      */
     async clear<Entity>(entityClass: EntityTarget<Entity>): Promise<void> {
         const metadata = this.connection.getMetadata(entityClass);
-        const queryRunner = this.queryRunner || this.connection.createQueryRunner("master");
+        const queryRunner = this.queryRunner || this.connection.createQueryRunner();
         try {
             return await queryRunner.clearTable(metadata.tablePath); // await is needed here because we are using finally
 

@@ -1,6 +1,5 @@
 import {QueryRunner} from "../query-runner/QueryRunner";
 import {Subject} from "./Subject";
-import {PromiseUtils} from "../util/PromiseUtils";
 import {SubjectTopoligicalSorter} from "./SubjectTopoligicalSorter";
 import {SubjectChangedColumnsComputer} from "./SubjectChangedColumnsComputer";
 import {SubjectWithoutIdentifierError} from "../error/SubjectWithoutIdentifierError";
@@ -242,7 +241,7 @@ export class SubjectExecutor {
         const [groupedInsertSubjects, groupedInsertSubjectKeys] = this.groupBulkSubjects(this.insertSubjects, "insert");
 
         // then we run insertion in the sequential order which is important since we have an ordered subjects
-        await PromiseUtils.runInSequence(groupedInsertSubjectKeys, async groupName => {
+        for (const groupName of groupedInsertSubjectKeys) {
             const subjects = groupedInsertSubjects[groupName];
 
             // we must separately insert entities which does not have any values to insert
@@ -291,7 +290,7 @@ export class SubjectExecutor {
 
             // insert subjects which must be inserted in separate requests (all default values)
             if (singleInsertSubjects.length > 0) {
-                await PromiseUtils.runInSequence(singleInsertSubjects, async subject => {
+                for (const subject of singleInsertSubjects) {
                     subject.insertedValueSet = subject.createValueSetAndPopChangeMap(); // important to have because query builder sets inserted values into it
 
                     // for nested set we execute additional queries
@@ -319,7 +318,7 @@ export class SubjectExecutor {
                     } else if (subject.metadata.treeType === "materialized-path") {
                         await new MaterializedPathSubjectExecutor(this.queryRunner).insert(subject);
                     }
-                });
+                }
             }
 
             subjects.forEach(subject => {
@@ -333,7 +332,7 @@ export class SubjectExecutor {
                     });
                 }
             });
-        });
+        }
     }
 
     /**
@@ -389,7 +388,7 @@ export class SubjectExecutor {
         // group insertion subjects to make bulk insertions
         const [groupedRemoveSubjects, groupedRemoveSubjectKeys] = this.groupBulkSubjects(this.removeSubjects, "delete");
 
-        await PromiseUtils.runInSequence(groupedRemoveSubjectKeys, async groupName => {
+        for (const groupName of groupedRemoveSubjectKeys) {
             const subjects = groupedRemoveSubjects[groupName];
             const deleteMaps = subjects.map(subject => {
                 if (!subject.identifier)
@@ -398,19 +397,21 @@ export class SubjectExecutor {
                 return subject.identifier;
             });
 
-            // here we execute our deletion query
-            // we don't need to specify entities and set update entity to true since the only thing query builder
-            // will do for use is a primary keys deletion which is handled by us later once persistence is finished
-            // also, we disable listeners because we call them on our own in persistence layer
-            await this.queryRunner
-                .manager
-                .createQueryBuilder()
-                .delete()
-                .from(subjects[0].metadata.target)
-                .where(deleteMaps)
-                .callListeners(false)
-                .execute();
-        });
+            {
+                // here we execute our deletion query
+                // we don't need to specify entities and set update entity to true since the only thing query builder
+                // will do for use is a primary keys deletion which is handled by us later once persistence is finished
+                // also, we disable listeners because we call them on our own in persistence layer
+                await this.queryRunner
+                    .manager
+                    .createQueryBuilder()
+                    .delete()
+                    .from(subjects[0].metadata.target)
+                    .where(deleteMaps)
+                    .callListeners(false)
+                    .execute();
+            }
+        }
     }
 
     /**

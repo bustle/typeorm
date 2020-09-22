@@ -7,7 +7,6 @@ import {ColumnMetadataArgs} from "../metadata-args/ColumnMetadataArgs";
 import {Connection} from "../connection/Connection";
 import {OrmUtils} from "../util/OrmUtils";
 import {ValueTransformer} from "../decorator/options/ValueTransformer";
-import {PromiseUtils} from "../util/PromiseUtils";
 import {FindOperator} from "../find-options/FindOperator";
 import {ApplyValueTransformers} from "../util/ApplyValueTransformers";
 
@@ -591,21 +590,21 @@ export class ColumnMetadata {
                 if (this.relationMetadata && this.referencedColumn) {
                     const relatedEntity = this.relationMetadata.getEntityValue(embeddedObject);
                     if (relatedEntity && relatedEntity instanceof Object && !(relatedEntity instanceof FindOperator)) {
-                        value = this.referencedColumn.getEntityValue(PromiseUtils.extractValue(relatedEntity));
+                        value = this.referencedColumn.getEntityValue(relatedEntity);
 
                     } else if (embeddedObject[this.propertyName] && embeddedObject[this.propertyName] instanceof Object && !(embeddedObject[this.propertyName] instanceof FindOperator)) {
-                        value = this.referencedColumn.getEntityValue(PromiseUtils.extractValue(embeddedObject[this.propertyName]));
+                        value = this.referencedColumn.getEntityValue(embeddedObject[this.propertyName]);
 
                     } else {
-                        value = PromiseUtils.extractValue(embeddedObject[this.propertyName]);
+                        value = embeddedObject[this.propertyName];
 
                     }
 
                 } else if (this.referencedColumn) {
-                    value = this.referencedColumn.getEntityValue(PromiseUtils.extractValue(embeddedObject[this.propertyName]));
+                    value = this.referencedColumn.getEntityValue(embeddedObject[this.propertyName]);
 
                 } else {
-                    value = PromiseUtils.extractValue(embeddedObject[this.propertyName]);
+                    value = embeddedObject[this.propertyName];
                 }
             }
 
@@ -613,17 +612,17 @@ export class ColumnMetadata {
             if (this.relationMetadata && this.referencedColumn) {
                 const relatedEntity = this.relationMetadata.getEntityValue(entity);
                 if (relatedEntity && relatedEntity instanceof Object && !(relatedEntity instanceof FindOperator) && !(relatedEntity instanceof Function)) {
-                    value = this.referencedColumn.getEntityValue(PromiseUtils.extractValue(relatedEntity));
+                    value = this.referencedColumn.getEntityValue(relatedEntity);
 
                 } else if (entity[this.propertyName] && entity[this.propertyName] instanceof Object && !(entity[this.propertyName] instanceof FindOperator) && !(entity[this.propertyName] instanceof Function)) {
-                    value = this.referencedColumn.getEntityValue(PromiseUtils.extractValue(entity[this.propertyName]));
+                    value = this.referencedColumn.getEntityValue(entity[this.propertyName]);
 
                 } else {
                     value = entity[this.propertyName];
                 }
 
             } else if (this.referencedColumn) {
-                value = this.referencedColumn.getEntityValue(PromiseUtils.extractValue(entity[this.propertyName]));
+                value = this.referencedColumn.getEntityValue(entity[this.propertyName]);
 
             } else {
                 value = entity[this.propertyName];

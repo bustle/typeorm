@@ -204,7 +204,7 @@ export class DbQueryResultCache implements QueryResultCache {
         if (queryRunner)
             return queryRunner;
 
-        return this.connection.createQueryRunner("master");
+        return this.connection.createQueryRunner();
     }
 
 }

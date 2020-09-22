@@ -19,6 +19,7 @@ import {PostgresConnectionCredentialsOptions} from "./PostgresConnectionCredenti
 import {EntityMetadata} from "../../metadata/EntityMetadata";
 import {OrmUtils} from "../../util/OrmUtils";
 import {ApplyValueTransformers} from "../../util/ApplyValueTransformers";
+import {ReplicationMode} from "../types/ReplicationMode";
 
 /**
  * Organizes communication with PostgreSQL DBMS.
@@ -434,7 +435,7 @@ export class PostgresDriver implements Driver {
     /**
      * Creates a query runner used to execute database queries.
      */
-    createQueryRunner(mode: "master"|"slave" = "master"): QueryRunner {
+    createQueryRunner(mode: ReplicationMode): QueryRunner {
         return new PostgresQueryRunner(this, mode);
     }
 

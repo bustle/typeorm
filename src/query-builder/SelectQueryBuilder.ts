@@ -1691,10 +1691,12 @@ export class SelectQueryBuilder<Entity> extends QueryBuilder<Entity> implements 
         const distinctAlias = this.escape(mainAlias);
         let countSql: string = "";
         if (metadata.hasMultiplePrimaryKeys) {
-            countSql = `COUNT(DISTINCT(CONCAT(` + metadata.primaryColumns.map((primaryColumn, index) => {
-                const propertyName = this.escape(primaryColumn.databaseName);
-                return `${distinctAlias}.${propertyName}`;
-            }).join(", ") + "))) as \"cnt\"";
+            {
+                countSql = `COUNT(DISTINCT(CONCAT(` + metadata.primaryColumns.map((primaryColumn, index) => {
+                    const propertyName = this.escape(primaryColumn.databaseName);
+                    return `${distinctAlias}.${propertyName}`;
+                }).join(", ") + "))) as \"cnt\"";
+            }
 
         } else {
             countSql = `COUNT(DISTINCT(` + metadata.primaryColumns.map((primaryColumn, index) => {
