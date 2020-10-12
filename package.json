@@ -1,7 +1,7 @@
 {
   "name": "@bustle/typeorm-postgres",
   "private": true,
-  "version": "0.2.27-rc.5",
+  "version": "0.2.28-rc.1",
   "description": "Fork of typeorm, a Data-Mapper ORM for TypeScript. Only supports PostgreSQL.",
   "license": "MIT",
   "readmeFilename": "README.md",
@@ -70,11 +70,11 @@
     "sinon": "^9.0.0",
     "sinon-chai": "^3.5.0",
     "source-map-support": "^0.5.16",
-    "sql.js": "^1.3.0",
+    "sql.js": "^1.3.2",
     "sqlite3": "^5.0.0",
     "ts-node": "^9.0.0",
     "typeorm-aurora-data-api-driver": "^1.4.0",
-    "typescript": "^3.9.7"
+    "typescript": "~3.6.0"
   },
   "dependencies": {
     "@sqltools/formatter": "1.2.2",
@@ -108,6 +108,7 @@
   "bin": {
     "typeorm": "./cli.js"
   },
+  "funding": "https://opencollective.com/typeorm",
   "collective": {
     "type": "opencollective",
     "url": "https://opencollective.com/typeorm",

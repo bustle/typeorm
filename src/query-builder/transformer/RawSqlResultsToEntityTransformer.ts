@@ -70,6 +70,10 @@ export class RawSqlResultsToEntityTransformer {
                     return keyValue.toString("hex");
                 }
 
+                if (typeof keyValue === "object") {
+                    return JSON.stringify(keyValue);
+                }
+
                 return keyValue;
             }).join("_"); // todo: check partial
 
@@ -253,7 +257,7 @@ export class RawSqlResultsToEntityTransformer {
                     }
                 }
                 return idMap;
-            }).filter(result => result);
+            }).filter(result => result !== undefined);
 
             const properties = rawRelationIdResult.relationIdAttribute.mapToPropertyPropertyPath.split(".");
             const mapToProperty = (properties: string[], map: ObjectLiteral, value: any): any => {

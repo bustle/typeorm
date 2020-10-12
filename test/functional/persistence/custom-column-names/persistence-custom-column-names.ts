@@ -34,7 +34,6 @@ describe("persistence > custom-column-names", function() {
         return connection
             .synchronize(true)
             .catch(e => {
-                console.log("Error during schema re-creation: ", e);
                 throw e;
             });
     }

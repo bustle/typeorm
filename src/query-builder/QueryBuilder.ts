@@ -558,27 +558,51 @@ export abstract class QueryBuilder<Entity> {
      * Replaces all entity's propertyName to name in the given statement.
      */
     protected replacePropertyNames(statement: string) {
-        this.expressionMap.aliases.forEach(alias => {
-            if (!alias.hasMetadata) return;
-            const replaceAliasNamePrefix = this.expressionMap.aliasNamePrefixingEnabled ? alias.name + "\\." : "";
-            const replacementAliasNamePrefix = this.expressionMap.aliasNamePrefixingEnabled ? this.escape(alias.name) + "." : "";
-            alias.metadata.columns.forEach(column => {
-                const expression = "([ =\(]|^.{0})" + replaceAliasNamePrefix + column.propertyPath + "([ =\)\,]|.{0}$)";
-                statement = statement.replace(new RegExp(expression, "gm"), "$1" + replacementAliasNamePrefix + this.escape(column.databaseName) + "$2");
-                const expression2 = "([ =\(]|^.{0})" + replaceAliasNamePrefix + column.propertyName + "([ =\)\,]|.{0}$)";
-                statement = statement.replace(new RegExp(expression2, "gm"), "$1" + replacementAliasNamePrefix + this.escape(column.databaseName) + "$2");
-            });
-            alias.metadata.relations.forEach(relation => {
-                [...relation.joinColumns, ...relation.inverseJoinColumns].forEach(joinColumn => {
-                    const expression = "([ =\(]|^.{0})" + replaceAliasNamePrefix + relation.propertyPath + "\\." + joinColumn.referencedColumn!.propertyPath + "([ =\)\,]|.{0}$)";
-                    statement = statement.replace(new RegExp(expression, "gm"), "$1" + replacementAliasNamePrefix + this.escape(joinColumn.databaseName) + "$2"); // todo: fix relation.joinColumns[0], what if multiple columns
-                });
-                if (relation.joinColumns.length > 0) {
-                    const expression = "([ =\(]|^.{0})" + replaceAliasNamePrefix + relation.propertyPath + "([ =\)\,]|.{0}$)";
-                    statement = statement.replace(new RegExp(expression, "gm"), "$1" + replacementAliasNamePrefix + this.escape(relation.joinColumns[0].databaseName) + "$2"); // todo: fix relation.joinColumns[0], what if multiple columns
+        // Escape special characters in regular expressions
+        // Per https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Escaping
+        const escapeRegExp = (s: String) => s.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
+
+        for (const alias of this.expressionMap.aliases) {
+            if (!alias.hasMetadata) continue;
+            const replaceAliasNamePrefix = this.expressionMap.aliasNamePrefixingEnabled ? `${alias.name}.` : "";
+            const replacementAliasNamePrefix = this.expressionMap.aliasNamePrefixingEnabled ? `${this.escape(alias.name)}.` : "";
+
+            const replacements: { [key: string]: string } = {};
+
+            for (const column of alias.metadata.columns) {
+                if (!(column.propertyPath in replacements))
+                    replacements[column.propertyPath] = column.databaseName;
+                if (!(column.propertyName in replacements))
+                    replacements[column.propertyName] = column.databaseName;
+                if (!(column.databaseName in replacements))
+                    replacements[column.databaseName] = column.databaseName;
+            }
+
+            for (const relation of alias.metadata.relations) {
+                for (const joinColumn of [...relation.joinColumns, ...relation.inverseJoinColumns]) {
+                    const key = `${relation.propertyPath}.${joinColumn.referencedColumn!.propertyPath}`;
+                    if (!(key in replacements))
+                        replacements[key] = joinColumn.databaseName;
                 }
-            });
-        });
+
+                if (relation.joinColumns.length > 0 && !(relation.propertyPath in replacements))
+                    replacements[relation.propertyPath] = relation.joinColumns[0].databaseName;
+            }
+
+            const replacementKeys = Object.keys(replacements);
+
+            if (replacementKeys.length) {
+                statement = statement.replace(new RegExp(
+                    `(?<=[ =\(]|^.{0})` +
+                    `${escapeRegExp(replaceAliasNamePrefix)}(${replacementKeys.map(escapeRegExp).join("|")})` +
+                    `(?=[ =\)\,]|.{0}$)`,
+                    "gm"
+                ), (_, p) =>
+                    `${replacementAliasNamePrefix}${this.escape(replacements[p])}`
+                );
+            }
+        }
+
         return statement;
     }
 
@@ -744,6 +768,9 @@ export abstract class QueryBuilder<Entity> {
 
         if (where instanceof Brackets) {
             const whereQueryBuilder = this.createQueryBuilder();
+            whereQueryBuilder.expressionMap.mainAlias = this.expressionMap.mainAlias;
+            whereQueryBuilder.expressionMap.aliasNamePrefixingEnabled = this.expressionMap.aliasNamePrefixingEnabled;
+            whereQueryBuilder.expressionMap.nativeParameters = this.expressionMap.nativeParameters;
             where.whereFactory(whereQueryBuilder as any);
             const whereString = whereQueryBuilder.createWhereExpressionString();
             this.setParameters(whereQueryBuilder.getParameters());
@@ -781,15 +808,19 @@ export abstract class QueryBuilder<Entity> {
                             } else if (parameterValue instanceof FindOperator) {
                                 let parameters: any[] = [];
                                 if (parameterValue.useParameter) {
-                                    const realParameterValues: any[] = parameterValue.multipleParameters ? parameterValue.value : [parameterValue.value];
-                                    realParameterValues.forEach((realParameterValue, realParameterValueIndex) => {
-                                        this.expressionMap.nativeParameters[parameterName + (parameterBaseCount + realParameterValueIndex)] = realParameterValue;
-                                        parameterIndex++;
-                                        parameters.push(this.connection.driver.createParameter(parameterName + (parameterBaseCount + realParameterValueIndex), parameterIndex - 1));
-                                    });
+                                    if (parameterValue.objectLiteralParameters) {
+                                        this.setParameters(parameterValue.objectLiteralParameters);
+                                    } else {
+                                        const realParameterValues: any[] = parameterValue.multipleParameters ? parameterValue.value : [parameterValue.value];
+                                        realParameterValues.forEach((realParameterValue, realParameterValueIndex) => {
+                                            this.expressionMap.nativeParameters[parameterName + (parameterBaseCount + realParameterValueIndex)] = realParameterValue;
+                                            parameterIndex++;
+                                            parameters.push(this.connection.driver.createParameter(parameterName + (parameterBaseCount + realParameterValueIndex), parameterIndex - 1));
+                                        });
+                                    }
                                 }
-                                return parameterValue.toSql(this.connection, aliasPath, parameters);
 
+                                return this.computeFindOperatorExpression(parameterValue, aliasPath, parameters);
                             } else {
                                 this.expressionMap.nativeParameters[parameterName] = parameterValue;
                                 parameterIndex++;
@@ -826,6 +857,50 @@ export abstract class QueryBuilder<Entity> {
         }
 
         return "";
+    }
+
+    /**
+     * Gets SQL needs to be inserted into final query.
+     */
+    protected computeFindOperatorExpression(operator: FindOperator<any>, aliasPath: string, parameters: any[]): string {
+        switch (operator.type) {
+            case "not":
+                if (operator.child) {
+                    return `NOT(${this.computeFindOperatorExpression(operator.child, aliasPath, parameters)})`;
+                } else {
+                    return `${aliasPath} != ${parameters[0]}`;
+                }
+            case "lessThan":
+                return `${aliasPath} < ${parameters[0]}`;
+            case "lessThanOrEqual":
+                return `${aliasPath} <= ${parameters[0]}`;
+            case "moreThan":
+                return `${aliasPath} > ${parameters[0]}`;
+            case "moreThanOrEqual":
+                return `${aliasPath} >= ${parameters[0]}`;
+            case "equal":
+                return `${aliasPath} = ${parameters[0]}`;
+            case "ilike":
+                return `${aliasPath} ILIKE ${parameters[0]}`;
+            case "like":
+                return `${aliasPath} LIKE ${parameters[0]}`;
+            case "between":
+                return `${aliasPath} BETWEEN ${parameters[0]} AND ${parameters[1]}`;
+            case "in":
+                return `${aliasPath} IN (${parameters.join(", ")})`;
+            case "any":
+                return `${aliasPath} = ANY(${parameters[0]})`;
+            case "isNull":
+                return `${aliasPath} IS NULL`;
+            case "raw":
+                if (operator.getSql) {
+                    return operator.getSql(aliasPath);
+                } else {
+                    return `${aliasPath} = ${operator.value}`;
+                }
+        }
+
+        throw new TypeError(`Unsupported FindOperator ${FindOperator.constructor.name}`);
     }
 
     /**

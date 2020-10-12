@@ -610,12 +610,6 @@ export class EntityManager {
     }
 
     /**
-     * Counts entities that match given conditions.
-     * Useful for pagination.
-     */
-    count<Entity>(entityClass: EntityTarget<Entity>, conditions?: FindConditions<Entity>): Promise<number>;
-
-    /**
      * Counts entities that match given options.
      * Useful for pagination.
      */
@@ -628,6 +622,12 @@ export class EntityManager {
     count<Entity>(entityClass: EntityTarget<Entity>, options?: FindManyOptions<Entity>): Promise<number>;
 
     /**
+     * Counts entities that match given conditions.
+     * Useful for pagination.
+     */
+    count<Entity>(entityClass: EntityTarget<Entity>, conditions?: FindConditions<Entity>): Promise<number>;
+
+    /**
      * Counts entities that match given find options or conditions.
      * Useful for pagination.
      */
@@ -638,14 +638,14 @@ export class EntityManager {
     }
 
     /**
-     * Finds entities that match given conditions.
-     */
-    find<Entity>(entityClass: EntityTarget<Entity>, conditions?: FindConditions<Entity>): Promise<Entity[]>;
-
-    /**
      * Finds entities that match given options.
      */
     find<Entity>(entityClass: EntityTarget<Entity>, options?: FindManyOptions<Entity>): Promise<Entity[]>;
+
+    /**
+     * Finds entities that match given conditions.
+     */
+    find<Entity>(entityClass: EntityTarget<Entity>, conditions?: FindConditions<Entity>): Promise<Entity[]>;
 
     /**
      * Finds entities that match given find options or conditions.
@@ -661,18 +661,18 @@ export class EntityManager {
     }
 
     /**
-     * Finds entities that match given conditions.
-     * Also counts all entities that match given conditions,
-     * but ignores pagination settings (from and take options).
-     */
-    findAndCount<Entity>(entityClass: EntityTarget<Entity>, conditions?: FindConditions<Entity>): Promise<[Entity[], number]>;
-
-    /**
      * Finds entities that match given find options.
      * Also counts all entities that match given conditions,
      * but ignores pagination settings (from and take options).
      */
     findAndCount<Entity>(entityClass: EntityTarget<Entity>, options?: FindManyOptions<Entity>): Promise<[Entity[], number]>;
+
+    /**
+     * Finds entities that match given conditions.
+     * Also counts all entities that match given conditions,
+     * but ignores pagination settings (from and take options).
+     */
+    findAndCount<Entity>(entityClass: EntityTarget<Entity>, conditions?: FindConditions<Entity>): Promise<[Entity[], number]>;
 
     /**
      * Finds entities that match given find options and conditions.
@@ -691,15 +691,15 @@ export class EntityManager {
 
     /**
      * Finds entities with ids.
-     * Optionally conditions can be applied.
-     */
-    findByIds<Entity>(entityClass: EntityTarget<Entity>, ids: any[], conditions?: FindConditions<Entity>): Promise<Entity[]>;
-
-    /**
-     * Finds entities with ids.
      * Optionally find options can be applied.
      */
     findByIds<Entity>(entityClass: EntityTarget<Entity>, ids: any[], options?: FindManyOptions<Entity>): Promise<Entity[]>;
+
+    /**
+     * Finds entities with ids.
+     * Optionally conditions can be applied.
+     */
+    findByIds<Entity>(entityClass: EntityTarget<Entity>, ids: any[], conditions?: FindConditions<Entity>): Promise<Entity[]>;
 
     /**
      * Finds entities with ids.

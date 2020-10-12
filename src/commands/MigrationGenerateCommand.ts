@@ -26,7 +26,8 @@ export class MigrationGenerateCommand implements yargs.CommandModule {
             .option("n", {
                 alias: "name",
                 describe: "Name of the migration class.",
-                demand: true
+                demand: true,
+                type: "string"
             })
             .option("d", {
                 alias: "dir",
@@ -109,7 +110,7 @@ export class MigrationGenerateCommand implements yargs.CommandModule {
 
                     console.log(chalk.green(`Migration ${chalk.blue(path)} has been generated successfully.`));
                 } else {
-                    console.log(chalk.yellow("Please specify migration name"));
+                    console.log(chalk.yellow("Please specify a migration name using the `-n` argument"));
                 }
             } else {
                 console.log(chalk.yellow(`No changes in database schema were found - cannot generate a migration. To create a new empty migration use "typeorm migration:create" command`));

@@ -102,8 +102,8 @@ export class ConnectionOptionsReader {
         const configFile = fileExtension ? this.baseFilePath : this.baseFilePath + "." + foundFileFormat;
 
         // try to find connection options from any of available sources of configuration
-        if (PlatformTools.getEnvVariable("TYPEORM_CONNECTION") || PlatformTools.getEnvVariable("TYPEORM_URL")) {
-            connectionOptions = new ConnectionOptionsEnvReader().read();
+        if (PlatformTools.getEnvVariable("TYPEORM_CONNECTION") || PlatformTools.getEnvVariable("TYPEORM_URL")) {
+            connectionOptions = await new ConnectionOptionsEnvReader().read();
 
         } else if (foundFileFormat === "json") {
             connectionOptions = JSON.parse(fs.readFileSync(configFile).toString());
