@@ -1,5 +1,5 @@
 import fs from "fs";
-import appRootPath from "app-root-path";
+import { appRootPath } from "../util/appRootPath";
 import {ConnectionOptions} from "./ConnectionOptions";
 import {PlatformTools} from "../platform/PlatformTools";
 import {ConnectionOptionsEnvReader} from "./options-reader/ConnectionOptionsEnvReader";
@@ -172,7 +172,7 @@ export class ConnectionOptionsReader {
         if (this.options && this.options.root)
             return this.options.root;
 
-        return appRootPath.path;
+        return appRootPath;
     }
 
     /**

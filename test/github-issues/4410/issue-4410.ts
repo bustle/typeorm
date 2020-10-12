@@ -1,5 +1,5 @@
-import appRootPath from "app-root-path";
 import sinon from "sinon";
+import { appRootPath } from "../../../src/util/appRootPath";
 import { Connection, FileLogger } from "../../../src";
 import { createTestingConnections, reloadTestingDatabases, closeTestingConnections, TestingOptions } from "../../utils/test-utils";
 import { Username } from "./entity/Username";
@@ -35,7 +35,7 @@ describe("github issues > #4410 allow custom filepath for FileLogger", () => {
             await connection.query(testQuery);
             sinon.assert.calledWith(
                 stub,
-                appRootPath.path + "/ormlogs.log",
+                appRootPath + "/ormlogs.log",
                 sinon.match(testQuery)
             );
         })));
@@ -57,7 +57,7 @@ describe("github issues > #4410 allow custom filepath for FileLogger", () => {
             await connection.query(testQuery);
             sinon.assert.calledWith(
                 stub,
-                appRootPath.path + "/test.log",
+                appRootPath + "/test.log",
                 sinon.match(testQuery)
             );
         })));
@@ -79,7 +79,7 @@ describe("github issues > #4410 allow custom filepath for FileLogger", () => {
             await connection.query(testQuery);
             sinon.assert.calledWith(
                 stub,
-                appRootPath.path + "/test/test.log",
+                appRootPath + "/test/test.log",
                 sinon.match(testQuery)
             );
         })));
